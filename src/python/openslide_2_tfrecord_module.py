@@ -16,8 +16,9 @@ WORKING_THUMB_MAX_SIZE = [2048, 2048]
 WORKING_THUMB_MIN_SIZE = [1024, 1024]
 
 """                                                                     <<
-Below = code from tensorflow examples page:
+some code from tensorflow examples page:
 https://www.tensorflow.org/tutorials/load_data/tf_records
+https://www.tensorflow.org/api_docs/python/tf/data/TFRecordDataset
 """
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -86,7 +87,7 @@ def get_iterable_tfrecord(tfr_name):
         tfr_name:   tensorflow data TFRecord file
         
     Returns:
-        tfr_as_TFRecordDataset: https://www.tensorflow.org/api_docs/python/tf/data/TFRecordDataset
+        TFRecordDataset_map_object:  tf.data.TFRecordDataset().map()
         
     """
     return tf.data.TFRecordDataset(tfr_name).map(_parse_image_function)
@@ -266,7 +267,7 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
     Args:
         svs_file_name:   accessable path file name
         output_dir:      writeable directory for the tfrecord
-        patch_size:      list of integers: [224, 224] or an integer if square
+        patch_size:      list of 2 integers: [224, 224] or an integer if square
         drop_threshold:  number between 0 & 1 -- if the masked area of the patch is smaller it is included
         file_ext:        default is '.jpg' ('.png') was tested (Note the period is included)
         
