@@ -250,7 +250,8 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width):
     if close_os_obj == True:
         os_obj.close()
         
-    mask_dict = {'thumb_mask': mask_im, 
+    mask_dict = {'one_thumb': one_thumb,
+                 'thumb_mask': mask_im,
                  'full_scale_rows_dict': full_scale_rows_dict, 
                  'full_scale_cols_dict': full_scale_cols_dict, 
                  'full_scale_rows_arrays': full_scale_rows_arrays, 
