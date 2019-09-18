@@ -208,8 +208,8 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width):
         close_os_obj = True
     
     #                               get the indexing arrays for the full size grid
-    pixels_height = os_obj.dimensions[0]
-    pixels_width = os_obj.dimensions[1]
+    pixels_height = os_obj.dimensions[1]
+    pixels_width = os_obj.dimensions[0]
 
     full_scale_rows_dict = get_adjcent_segmented_length_fence_array(segment_length=patch_height, 
                                                                     length=pixels_height)
@@ -219,8 +219,8 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width):
     full_scale_cols_arrays = full_scale_cols_dict['fence_array']
     
     #                               determine thumbnail size & get the mask
-    pixels_height_ds = os_obj.level_dimensions[-1][0]
-    pixels_width_ds = os_obj.level_dimensions[-1][1]
+    pixels_height_ds = os_obj.level_dimensions[-1][1]
+    pixels_width_ds = os_obj.level_dimensions[-1][0]
     
     thumbnail_divisor = 1
     while_stopper = 20
