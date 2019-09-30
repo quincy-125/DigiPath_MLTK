@@ -1,0 +1,11 @@
+
+method:            tfrecord_2_masked_thumb
+
+output_dir:         ../../run_dir/results
+
+wsi_filename:      ../data/images/CMU-1-Small-Region.svs
+tfrecord_filename: ../data/tfrecords/CMU-1-Small-Region.tfrecords
+thumb_scale:       0.1
+alpha:             0.1
+
+border_color:      blue
