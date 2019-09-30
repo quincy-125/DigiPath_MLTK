@@ -24,8 +24,9 @@ sys	0m0.467s
 
 ****
 Test TFRecord file produces proper thumbnail with location of patch images (after running all the above)
-- First Edit the *../run_dir/tfrecord_to_masked_thumb.yml* file to set the path of the file produced above
-change:
+- First Edit the *../run_dir/tfrecord_to_masked_thumb.yml* file to set the path of the file produced above.
+
+- Change:
 ```
 tfrecord_filename: ../data/tfrecords/CMU-1-Small-Region.tfrecords
 ``` 
@@ -33,6 +34,7 @@ to
 ```
 tfrecord_filename: ../../run_dir/results/CMU-1-Small-Region.tfrecords
 ```
+
 Then run the code with make
 ```
 time make test_tfr_2_mthumb
