@@ -1,8 +1,8 @@
 """
-main function for ./workflow_test_tools.py
+main function for ./openslied_2_tfrecord.py
 
 Usage:
-python3 workflow_test.py -run_file test_parameters.json
+python3 digipath_mltk.py -run_directory ./ -run_file run_parameters_file.yml
 
 """
 

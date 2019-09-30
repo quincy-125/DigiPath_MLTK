@@ -1,30 +1,20 @@
 """
     module for converting OpenSlide compatable image files to TFRecord files 
-    and viewing the record as a thumbnail
+    and viewing the TFRecord as a thumbnail image
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import tensorflow as tf
+import os
 from tempfile import TemporaryDirectory
 import argparse
-import yaml
 
-from PIL import ImageDraw
-
-import IPython.display as ip_display
-import os
-import sys
-import time
-import pandas as pd
 import numpy as np
-
-import matplotlib.pyplot as plt
-
-import skimage
+import yaml
 from skimage.filters import threshold_otsu
-
 import openslide
 
 import PIL
+from PIL import ImageDraw
 from PIL.Image import Image
 
 
@@ -69,31 +59,77 @@ def get_run_parameters(run_directory, run_file):
 
     return run_parameters
 
-def run_imfile_to_tfrecord(run_parameters):
-    """ svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_threshold, file_ext=None) """
-    print('call: %s\nwith run_parameters:\n'%(
-        'svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_threshold, file_ext=None)'))
-    for k, v in run_parameters.items():
-        print('%40s: %s'%(k,v))
-
-def write_tfrecord_masked_thumbnail(run_parameters):
-    """ get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color='blue') """
-    print('call: %s\nwith run_parameters:\n'%(
-        'get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color="blue")'))
-    for k, v in run_parameters.items():
-        print('%40s: %s'%(k,v))
-
 
 def run_imfile_to_tfrecord(run_parameters):
-    """ svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_threshold, file_ext=None)
+    """ read the run_parameters dictionary & execute function: svs_file_to_patches_tfrecord with those
+
+    Args:
+        run_parameters:     with keys:
+                                image_file_name:    Openslide readable (absolute path or path relative to run directory)
+                                output_dir:         (absolute path or path relative to run directory)
+                                patch_height:       pixel height of output patch images
+                                patch_width:        pixel width of output patch images
+                                drop_threshold:     mask image (threshold_otsu) input
+
+    Returns:
+        (writes tfrecord file - prints filename if successful)
+
     """
-    for k, v in run_parameters.items():
-        print('%40s: %s'%(k, v))
+    image_file_name = run_parameters['image_file_name']
+    output_dir = run_parameters['output_dir']
+    patch_height = run_parameters['patch_height']
+    patch_width = run_parameters['patch_width']
+    patch_size = [patch_height, patch_width]
+    drop_threshold = run_parameters['drop_threshold']
+
+    if 'file_ext' in run_parameters:
+        file_ext = run_parameters['file_ext']
+    else:
+        file_ext = None
+
+    if os.path.isfile(image_file_name) == True:
+        print('found image_file_name:\n%s\n'%(image_file_name))
+    else:
+        print('running from: ', os.getcwd())
+
+    res_dict = svs_file_to_patches_tfrecord(image_file_name, output_dir, patch_size, drop_threshold, file_ext)
+
+    if 'tfrecord_file_name' in res_dict:
+        print('TFRecord file written:\n%s\n'%(res_dict['tfrecord_file_name']))
+
 
 def write_tfrecord_masked_thumbnail(run_parameters):
-    """ get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color='blue') """
-    for k, v in run_parameters.items():
-        print('%40s: %s'%(k, v))
+    """ create a thumbnail image of a WSI marked with the patches found in the TFRecord file:
+    Args:
+        run_parameters:     with keys:
+                                image_file_name:    Openslide readable (absolute path or path relative to run directory)
+                                output_dir:         (absolute path or path relative to run directory)
+                                patch_height:       pixel height of output patch images
+                                patch_width:        pixel width of output patch images
+                                drop_threshold:     mask image (threshold_otsu) input
+
+    Returns:
+        (writes an image file prints the name if successful)
+
+    """
+    output_dir = run_parameters['output_dir']
+    tfrecord_filename = run_parameters['tfrecord_filename']
+    wsi_filename = run_parameters['wsi_filename']
+    thumb_scale = run_parameters['thumb_scale']
+    alpha = run_parameters['alpha']
+    if 'border_color' in run_parameters:
+        border_color = run_parameters['border_color']
+    else:
+        border_color = 'blue'
+
+    m_im = get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color)
+
+    if isinstance(m_im, PIL.Image.Image):
+        out_file_name = os.path.join(output_dir, 'test_image.jpg')
+        m_im = m_im.convert('RGB')
+        m_im.save(out_file_name)
+
+        print('\nThumbnail Image File Written:\n%s\n'%(out_file_name))
 
 
 def _bytes_feature(value):
@@ -110,7 +146,7 @@ def _int64_feature(value):
     """Returns an int64_list from a bool / enum / int / uint."""
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
-#                                                                                NEW Start    <o><o>
+
 def image_patch(image_string, label, ulc_row, ulc_col, lrc_row, lrc_col, image_name='patch'):
     """ image_metadat_dict = image_example(image_string, label, image_name)
     Create a dictionary of jpg image features
@@ -135,6 +171,7 @@ def image_patch(image_string, label, ulc_row, ulc_col, lrc_row, lrc_col, image_n
                'image_raw': _bytes_feature(image_string) }
 
     return tf.train.Example(features=tf.train.Features(feature=feature))
+
 
 def _parse_image_patch_function(example_proto):
     """ reader for image_example() encoded as tfrecord file 
@@ -174,7 +211,6 @@ def get_iterable_tfrecord(tfr_name):
         
     """
     return tf.data.TFRecordDataset(tfr_name).map(_parse_image_patch_function)
-#                                                                                NEW End      <o><o>
 
 
 def get_adjcent_segmented_length_fence_array(segment_length, length):
@@ -291,13 +327,12 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=N
                          'thumb_scale_rows_arrays': thumb_scale_rows_arrays, 
                          'thumb_scale_cols_arrays': thumb_scale_cols_arrays }
     """
-    # don't close if it was passed in, close if it was opened in this function
+    # don't close os_obj if OpenSlide object was passed in, close if created in this function from os_obj name
     close_os_obj = False
     if isinstance(os_obj, str) and os.path.isfile(os_obj):
         os_obj = openslide.OpenSlide(os_obj)
         close_os_obj = True
-    
-    #                                                                                NEW fix start    <o><o>
+
     #                               get the indexing arrays for the full size grid
     pixels_height = os_obj.dimensions[1]
     pixels_width = os_obj.dimensions[0]
@@ -312,7 +347,6 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=N
     #                               determine thumbnail size & get the mask
     pixels_height_ds = os_obj.level_dimensions[-1][1]
     pixels_width_ds = os_obj.level_dimensions[-1][0]
-    #                                                                                NEW fix end       <o><o>
     
     if thumbnail_divisor is None:
         thumbnail_divisor = 1
@@ -382,7 +416,9 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
     tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
     if file_ext is None:
         file_ext = '.jpg'
-        
+    elif file_ext[0] != '.':
+        file_ext = '.' + file_ext
+
     # expand patch size into both height and width
     if isinstance(patch_size, list) and len(patch_size) == 2:
         patch_height = patch_size[0]
@@ -393,9 +429,7 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
     # get the OpenSlide object - open the file, and get the mask with the scaled grids
     os_obj = openslide.OpenSlide(svs_file_name)
     mask_dict = get_mask_w_scale_grid(os_obj, patch_height, patch_width)
-    
-    # Break-out option
-    # mask_dict = get_mask_w_scale_grid(os_obj, patch_height, patch_width)
+    #                                                   Break-out option: pass run_parameters to get_mask_w_scale_grid
     
     # convert the dictionary to named variables for clarity
     mask_im = mask_dict['thumb_mask']
@@ -408,7 +442,6 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
     # open a temporary directory and a TFRecordWriter object
     with TemporaryDirectory() as temp_dir:
         with tf.io.TFRecordWriter(tfrecord_file_name) as writer:
-            
             # iterate through the rows and columns of patches
             for row in range(full_scale_rows_arrays.shape[0]):
                 for col in range(full_scale_cols_arrays.shape[0]):
@@ -418,10 +451,7 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
                     area = (c[0], r[0], c[1], r[1])
                     thumb_segment = mask_im.crop(area)
                     thumb_arr = np.array(thumb_segment)
-                    
-                    # Break-out option
-                    # mask_dict = get_mask_w_scale_grid(os_obj, patch_height, patch_width)
-                    
+
                     # evaluate the thumb_segment - reject if the masked (dark area) is too large
                     mask_value = np.float(np.sum(thumb_arr==0)) / np.float(np.prod(thumb_arr.shape))
                     if mask_value <= drop_threshold:
