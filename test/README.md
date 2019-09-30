@@ -7,7 +7,6 @@ make env_setup
 - creates ../../run_dir/results 
 - move yaml files into ../../run_dir
 
-****
 Test that the .svs file in ../data/images/ is converted to a TFRecord:
 ```
 time make test_im_2_tfr
@@ -21,3 +20,29 @@ real	0m3.255s
 user	0m3.512s
 sys	0m0.467s
 ```
+
+****
+Test TFRecord file produces proper thumbnail with location of patch images (after running all the above)
+- First Edit the *../run_dir/tfrecord_to_masked_thumb.yml* file to set the path of the file produced above
+change:
+```
+tfrecord_filename: ../data/tfrecords/CMU-1-Small-Region.tfrecords
+``` 
+to
+```
+tfrecord_filename: ../../run_dir/results/CMU-1-Small-Region.tfrecords
+```
+Then run the code with make
+```
+time make test_tfr_2_mthumb
+````
+Should produce output like:
+```
+Thumbnail Image File Written:
+../../run_dir/results/test_image.jpg
+
+real	0m3.287s
+user	0m3.557s
+sys	0m0.457s
+```
+View the output file to confirm
