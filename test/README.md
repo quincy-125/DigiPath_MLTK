@@ -1,11 +1,12 @@
 # Test using Makefile.
-Clone the repository, cd to this (test) directory.
+Clone repository, cd to (test) directory.
+
 Run make to setup a test environment at the same level as the cloned repo.
 ```
 make env_setup
 ```
 - creates ../../run_dir/results 
-- move yaml files into ../../run_dir
+- moves yaml files into ../../run_dir/
 
 Test that the .svs file in ../data/images/ is converted to a TFRecord:
 ```
