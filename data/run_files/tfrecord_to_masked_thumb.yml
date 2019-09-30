@@ -1,0 +1,5 @@
+
+
+method:      tfrecord_2_masked_thumb
+
+# get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color='blue')

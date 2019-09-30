@@ -1,0 +1,6 @@
+
+
+method:    image_2_tfrecord
+
+
+# svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_threshold, file_ext=None)
