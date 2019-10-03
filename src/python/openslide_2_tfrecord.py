@@ -425,7 +425,7 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
         patch_width = patch_size[1]
     else:
         patch_height = patch_width = patch_size
-    
+
     # get the OpenSlide object - open the file, and get the mask with the scaled grids
     os_obj = openslide.OpenSlide(svs_file_name)
     mask_dict = get_mask_w_scale_grid(os_obj, patch_height, patch_width)
@@ -473,10 +473,10 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
                         image_string = open(patch_full_name, 'rb').read()
                         tf_example_obj = image_patch(image_string, 
                                                      label=seq_number, 
-                                                     ulc_row=r[0], 
-                                                     ulc_col=c[0], 
-                                                     lrc_row=r[1], 
-                                                     lrc_col=c[1],
+                                                     ulc_row=fs_row[0],
+                                                     ulc_col=fs_col[0],
+                                                     lrc_row=fs_row[1],
+                                                     lrc_col=fs_col[1],
                                                      image_name=bytes(patch_name,'utf8'))
                         
                         writer.write(tf_example_obj.SerializeToString())
@@ -515,7 +515,7 @@ def get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, 
     while is_empty == False:
         try:
             patch_record = iterable_tfrecord.next()
-            image_raw = patch_record['image_raw'].numpy()
+            # image_raw = patch_record['image_raw'].numpy()
             ulc_row = np.int(patch_record['ulc_row'].numpy() * thumb_scale)
             ulc_col = np.int(patch_record['ulc_col'].numpy() * thumb_scale)
             lrc_row = np.int(patch_record['lrc_row'].numpy() * thumb_scale)
@@ -544,8 +544,8 @@ def get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, 
     """
     # open the WSI - get FSI size & get thumbnail, make a grayscale copy as "RGBA" & calculate scale
     os_obj = openslide.OpenSlide(wsi_filename)
-    pixels_height = np.int(os_obj.dimensions[1] * thumb_scale)
-    pixels_width = np.int(os_obj.dimensions[0] * thumb_scale)
+    # pixels_height = np.int(os_obj.dimensions[1] * thumb_scale)
+    # pixels_width = np.int(os_obj.dimensions[0] * thumb_scale)
     
     # get the height and width of the first TFRecord patch
     iterable_tfrecord = get_iterable_tfrecord(tfrecord_filename).__iter__()
@@ -577,7 +577,7 @@ def get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, 
         try:
             # get & scale the tfrecord patch
             patch_record = iterable_tfrecord.next()
-            image_raw = patch_record['image_raw'].numpy()
+            # image_raw = patch_record['image_raw'].numpy()
             ulc_row = np.int(patch_record['ulc_row'].numpy() * thumb_scale)
             ulc_col = np.int(patch_record['ulc_col'].numpy() * thumb_scale)
             lrc_row = np.int(patch_record['lrc_row'].numpy() * thumb_scale)
