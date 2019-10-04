@@ -323,7 +323,7 @@ def find_thumb_nail_scale_divisor(pixels_height, pixels_width, max_thumb_size=WO
 
     return thumbnail_divisor
 
-def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=None):
+def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=None, method='threshold_otsu'):
     """ Usage:
     mask_dict = get_mask_w_scale_grid(svs_file_name, patch_height, patch_width, thumbnail_divisor=None)
     
@@ -374,14 +374,10 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=N
     cols_divisor = pixels_width / thumb_width
     thumb_scale_cols_arrays = (full_scale_cols_arrays // cols_divisor).astype(int)
 
-    #                               git the mask image
+    #                               git the image sample selection mask
     one_thumb = os_obj.get_thumbnail((thumb_height, thumb_width))
-    mask_im = get_image_mask(one_thumb, method='threshold_otsu')
-    # grey_thumbnail = np.array(one_thumb.convert('L'))
-    # thresh = threshold_otsu(grey_thumbnail)
-    # mask = np.array(grey_thumbnail) < thresh
-    # mask_im = PIL.Image.fromarray(np.uint8(mask) * 255)
-    
+    mask_im = get_image_sample_selection_mask(one_thumb, method)
+
     # close if it was opened in this function - don't close if it was passed in
     if close_os_obj == True:
         os_obj.close()
@@ -399,7 +395,7 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=N
     return mask_dict
 
 
-def get_image_mask(one_thumb, method='threshold_otsu'):
+def get_image_sample_selection_mask(one_thumb, method):
     """ get an image mask """
     mask_im = None
     if method == 'threshold_otsu':
