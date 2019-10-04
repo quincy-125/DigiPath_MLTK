@@ -8,4 +8,4 @@ tfrecord_filename: ../data/tfrecords/CMU-1-Small-Region.tfrecords
 thumb_scale:       0.1
 alpha:             0.1
 
-border_color:      blue
+border_color:      turquoise
