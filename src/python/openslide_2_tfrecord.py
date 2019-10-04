@@ -117,7 +117,6 @@ def write_tfrecord_masked_thumbnail(run_parameters):
     output_dir = run_parameters['output_dir']
     tfrecord_filename = run_parameters['tfrecord_filename']
     wsi_filename = run_parameters['wsi_filename']
-    thumb_scale = run_parameters['thumb_scale']
     border_color = run_parameters['border_color']
 
     m_im = get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, border_color)
