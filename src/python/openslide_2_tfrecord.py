@@ -122,7 +122,7 @@ def write_tfrecord_masked_thumbnail(run_parameters):
     else:
         border_color = 'blue'
 
-    m_im = get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color)
+    m_im = get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, border_color='red')
 
     if isinstance(m_im, PIL.Image.Image):
         out_file_name = os.path.join(output_dir, 'test_image.jpg')
@@ -308,6 +308,20 @@ def get_row_col_from_patch_name(fname):
     
     return {'base_name': parts_list[0], 'file_ext': file_ext, 'row': row, 'col': col }
 
+def find_thumb_nail_scale_divisor(pixels_height, pixels_width, max_thumb_size=WORKING_THUMB_MAX_SIZE[0]):
+    """  """
+    thumbnail_divisor = 1
+    scale_determinant = max(pixels_height, pixels_width)
+
+    if scale_determinant // thumbnail_divisor > WORKING_THUMB_MIN_SIZE[0]:
+        while_stopper = 20
+        count = 0
+
+        while scale_determinant // thumbnail_divisor > max_thumb_size and count < while_stopper:
+            count += 0
+            thumbnail_divisor *= 2
+
+    return thumbnail_divisor
 
 def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=None):
     """ Usage:
@@ -349,14 +363,7 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=N
     pixels_width_ds = os_obj.level_dimensions[-1][0]
     
     if thumbnail_divisor is None:
-        thumbnail_divisor = 1
-        while_stopper = 20
-        count = 0
-
-        scale_determinant = max(pixels_height_ds, pixels_width_ds)
-        while scale_determinant // thumbnail_divisor > WORKING_THUMB_MAX_SIZE[0] and count < while_stopper:
-            count += 0
-            thumbnail_divisor *= 2
+        thumbnail_divisor = find_thumb_nail_scale_divisor(pixels_height_ds, pixels_width_ds)
     
     thumb_height = pixels_height_ds // thumbnail_divisor
     thumb_width = pixels_width_ds // thumbnail_divisor
@@ -369,10 +376,11 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=N
 
     #                               git the mask image
     one_thumb = os_obj.get_thumbnail((thumb_height, thumb_width))
-    grey_thumbnail = np.array(one_thumb.convert('L'))
-    thresh = threshold_otsu(grey_thumbnail)
-    mask = np.array(grey_thumbnail) < thresh
-    mask_im = PIL.Image.fromarray(np.uint8(mask) * 255)
+    mask_im = get_image_mask(one_thumb, method='threshold_otsu')
+    # grey_thumbnail = np.array(one_thumb.convert('L'))
+    # thresh = threshold_otsu(grey_thumbnail)
+    # mask = np.array(grey_thumbnail) < thresh
+    # mask_im = PIL.Image.fromarray(np.uint8(mask) * 255)
     
     # close if it was opened in this function - don't close if it was passed in
     if close_os_obj == True:
@@ -389,6 +397,20 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor=N
                  'thumb_scale_cols_arrays': thumb_scale_cols_arrays}
     
     return mask_dict
+
+
+def get_image_mask(one_thumb, method='threshold_otsu'):
+    """ get an image mask """
+    mask_im = None
+    if method == 'threshold_otsu':
+        grey_thumbnail = np.array(one_thumb.convert('L'))
+        thresh = threshold_otsu(grey_thumbnail)
+        mask = np.array(grey_thumbnail) < thresh
+        mask_im = PIL.Image.fromarray(np.uint8(mask) * 255)
+    else:
+        print('method %s not implemented'%(method))
+        
+    return mask_im
 
 
 def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_threshold, file_ext=None):
@@ -491,22 +513,29 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
     return svs_file_conversion_dict
 
 
-def get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, border_color='red'):
+def get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, border_color='red'):
     """ create and mark a thumbnail image with the TFRecord file patch loacations
     
     Args:
         tfrecord_filename:  TensorFlow TFRecord file as created by svs_file_to_patches_tfrecord()
         wsi_filename:       Whole Scale Image filename compatible with OpenSlide
         thumb_scale:        WSI reduction scale to define thumbnail image size
-        border_color:       string: red, green, blue, brown, yellow, white, black, orange, tan 
+        border_color:       string: red, green, blue, brown, yellow, white, black, orange, tan
+
     Returns:
         marked_thumbnail:   PIL Image with tfrecord image locations marked
         
     """
     # open the WSI - get FSI size & get thumbnail, make a grayscale copy as "RGBA" & calculate scale
     os_obj = openslide.OpenSlide(wsi_filename)
+    pixels_height_ds = os_obj.dimensions[1]
+    pixels_width_ds = os_obj.dimensions[0]
+
+    thumbnail_divisor = find_thumb_nail_scale_divisor(pixels_height_ds, pixels_width_ds)
+    thumb_scale = 1 / thumbnail_divisor
     pixels_height = np.int(os_obj.dimensions[1] * thumb_scale)
     pixels_width = np.int(os_obj.dimensions[0] * thumb_scale)
+
     one_thumb = os_obj.get_thumbnail((pixels_height, pixels_width)).convert('RGBA')    
     one_thumb_draw = ImageDraw.Draw(one_thumb)
     
@@ -515,7 +544,6 @@ def get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, 
     while is_empty == False:
         try:
             patch_record = iterable_tfrecord.next()
-            # image_raw = patch_record['image_raw'].numpy()
             ulc_row = np.int(patch_record['ulc_row'].numpy() * thumb_scale)
             ulc_col = np.int(patch_record['ulc_col'].numpy() * thumb_scale)
             lrc_row = np.int(patch_record['lrc_row'].numpy() * thumb_scale)
@@ -529,75 +557,75 @@ def get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, 
     return one_thumb
 
 
-def get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color='blue'):
-    """ create a grayscale thumbnail image and insert scaled TFRecord file patch images
-    
-    Args:
-        tfrecord_filename:  TensorFlow TFRecord file as created by svs_file_to_patches_tfrecord()
-        wsi_filename:       Whole Scale Image filename compatible with OpenSlide
-        thumb_scale:        WSI reduction scale to define thumbnail image size
-        alhpa:              (0, 1) - blend the grayscale with the patch
-        border_color:       string: red, green, blue, brown, yellow, white, black, orange, tan
-        
-    Returns:
-        masked_thumbnail:   PIL Image with tfrecord image locations marked
-    """
-    # open the WSI - get FSI size & get thumbnail, make a grayscale copy as "RGBA" & calculate scale
-    os_obj = openslide.OpenSlide(wsi_filename)
-    # pixels_height = np.int(os_obj.dimensions[1] * thumb_scale)
-    # pixels_width = np.int(os_obj.dimensions[0] * thumb_scale)
-    
-    # get the height and width of the first TFRecord patch
-    iterable_tfrecord = get_iterable_tfrecord(tfrecord_filename).__iter__()
-    patch_record = iterable_tfrecord.next() 
-    patch_height = np.int(patch_record['lrc_row'].numpy()) - np.int(patch_record['ulc_row'].numpy()) + 1
-    patch_width = np.int(patch_record['lrc_col'].numpy()) - np.int(patch_record['ulc_col'].numpy()) + 1
-    
-    # get the mask, thumnail image and boxes scaling arrays
-    thumbnail_divisor = 1 / thumb_scale
-    mask_dict = get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor)
-    
-    # extract the thumbnail image and mask
-    one_thumb = mask_dict['one_thumb'].convert('RGBA')
-    one_gray_thumb = one_thumb.convert('L')
-    one_gray_thumb = one_gray_thumb.convert('RGBA')
-    black_mask = mask_dict['thumb_mask'].convert('RGBA')
-    
-    # also see PIL.Image:  composite
-    thumb_mask = PIL.Image.blend(one_gray_thumb, black_mask, alpha)
-    if border_color is None:
-        one_thumb = PIL.Image.blend(one_thumb, one_gray_thumb, alpha)
-    else:
-        one_thumb = PIL.Image.blend(one_thumb, black_mask, alpha)
-    
-    # get the full list of patches
-    iterable_tfrecord = get_iterable_tfrecord(tfrecord_filename).__iter__()
-    is_empty = False
-    while is_empty == False:
-        try:
-            # get & scale the tfrecord patch
-            patch_record = iterable_tfrecord.next()
-            # image_raw = patch_record['image_raw'].numpy()
-            ulc_row = np.int(patch_record['ulc_row'].numpy() * thumb_scale)
-            ulc_col = np.int(patch_record['ulc_col'].numpy() * thumb_scale)
-            lrc_row = np.int(patch_record['lrc_row'].numpy() * thumb_scale)
-            lrc_col = np.int(patch_record['lrc_col'].numpy() * thumb_scale)
-            box_bound = (ulc_col, ulc_row, lrc_col, lrc_row)
-            
-            # get the patch image & add a border
-            patch_im = one_thumb.crop(box_bound).convert('RGBA')
-            if not border_color is None:
-                patch_draw = ImageDraw.Draw(patch_im)
-                h = patch_im.size[0]
-                w = patch_im.size[1]
-                patch_draw.rectangle(((0, 0), (h-1, w-1)), outline=border_color, fill=None)
-            
-            # paste the scaled & bordered tfrecord image patch into the thumbnail
-            offset = (ulc_col, ulc_row)
-            thumb_mask.paste(patch_im, offset)
-
-        except StopIteration:
-            is_empty = True
-            pass
-    
-    return thumb_mask
+# def get_tfrecord_masked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, alpha, border_color='blue'):
+#     """ create a grayscale thumbnail image and insert scaled TFRecord file patch images
+#
+#     Args:
+#         tfrecord_filename:  TensorFlow TFRecord file as created by svs_file_to_patches_tfrecord()
+#         wsi_filename:       Whole Scale Image filename compatible with OpenSlide
+#         thumb_scale:        WSI reduction scale to define thumbnail image size
+#         alhpa:              (0, 1) - blend the grayscale with the patch
+#         border_color:       string: red, green, blue, brown, yellow, white, black, orange, tan
+#
+#     Returns:
+#         masked_thumbnail:   PIL Image with tfrecord image locations marked
+#     """
+#     # open the WSI - get FSI size & get thumbnail, make a grayscale copy as "RGBA" & calculate scale
+#     os_obj = openslide.OpenSlide(wsi_filename)
+#     # pixels_height = np.int(os_obj.dimensions[1] * thumb_scale)
+#     # pixels_width = np.int(os_obj.dimensions[0] * thumb_scale)
+#
+#     # get the height and width of the first TFRecord patch
+#     iterable_tfrecord = get_iterable_tfrecord(tfrecord_filename).__iter__()
+#     patch_record = iterable_tfrecord.next()
+#     patch_height = np.int(patch_record['lrc_row'].numpy()) - np.int(patch_record['ulc_row'].numpy()) + 1
+#     patch_width = np.int(patch_record['lrc_col'].numpy()) - np.int(patch_record['ulc_col'].numpy()) + 1
+#
+#     # get the mask, thumnail image and boxes scaling arrays
+#     thumbnail_divisor = 1 / thumb_scale
+#     mask_dict = get_mask_w_scale_grid(os_obj, patch_height, patch_width, thumbnail_divisor)
+#
+#     # extract the thumbnail image and mask
+#     one_thumb = mask_dict['one_thumb'].convert('RGBA')
+#     one_gray_thumb = one_thumb.convert('L')
+#     one_gray_thumb = one_gray_thumb.convert('RGBA')
+#     black_mask = mask_dict['thumb_mask'].convert('RGBA')
+#
+#     # also see PIL.Image:  composite
+#     thumb_mask = PIL.Image.blend(one_gray_thumb, black_mask, alpha)
+#     if border_color is None:
+#         one_thumb = PIL.Image.blend(one_thumb, one_gray_thumb, alpha)
+#     else:
+#         one_thumb = PIL.Image.blend(one_thumb, black_mask, alpha)
+#
+#     # get the full list of patches
+#     iterable_tfrecord = get_iterable_tfrecord(tfrecord_filename).__iter__()
+#     is_empty = False
+#     while is_empty == False:
+#         try:
+#             # get & scale the tfrecord patch
+#             patch_record = iterable_tfrecord.next()
+#             # image_raw = patch_record['image_raw'].numpy()
+#             ulc_row = np.int(patch_record['ulc_row'].numpy() * thumb_scale)
+#             ulc_col = np.int(patch_record['ulc_col'].numpy() * thumb_scale)
+#             lrc_row = np.int(patch_record['lrc_row'].numpy() * thumb_scale)
+#             lrc_col = np.int(patch_record['lrc_col'].numpy() * thumb_scale)
+#             box_bound = (ulc_col, ulc_row, lrc_col, lrc_row)
+#
+#             # get the patch image & add a border
+#             patch_im = one_thumb.crop(box_bound).convert('RGBA')
+#             if not border_color is None:
+#                 patch_draw = ImageDraw.Draw(patch_im)
+#                 h = patch_im.size[0]
+#                 w = patch_im.size[1]
+#                 patch_draw.rectangle(((0, 0), (h-1, w-1)), outline=border_color, fill=None)
+#
+#             # paste the scaled & bordered tfrecord image patch into the thumbnail
+#             offset = (ulc_col, ulc_row)
+#             thumb_mask.paste(patch_im, offset)
+#
+#         except StopIteration:
+#             is_empty = True
+#             pass
+#
+#     return thumb_mask
