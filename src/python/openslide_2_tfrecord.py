@@ -118,13 +118,9 @@ def write_tfrecord_masked_thumbnail(run_parameters):
     tfrecord_filename = run_parameters['tfrecord_filename']
     wsi_filename = run_parameters['wsi_filename']
     thumb_scale = run_parameters['thumb_scale']
-    alpha = run_parameters['alpha']
-    if 'border_color' in run_parameters:
-        border_color = run_parameters['border_color']
-    else:
-        border_color = 'blue'
+    border_color = run_parameters['border_color']
 
-    m_im = get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, thumb_scale, border_color='red')
+    m_im = get_tfrecord_marked_thumbnail(tfrecord_filename, wsi_filename, border_color)
 
     if isinstance(m_im, PIL.Image.Image):
         out_file_name = os.path.join(output_dir, 'test_image.jpg')
