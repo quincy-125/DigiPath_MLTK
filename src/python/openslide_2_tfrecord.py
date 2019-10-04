@@ -409,7 +409,7 @@ def get_image_mask(one_thumb, method='threshold_otsu'):
         mask_im = PIL.Image.fromarray(np.uint8(mask) * 255)
     else:
         print('method %s not implemented'%(method))
-        
+
     return mask_im
 
 
