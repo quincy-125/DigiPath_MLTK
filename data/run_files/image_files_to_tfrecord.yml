@@ -1,12 +1,13 @@
 
 # possible methods: image_2_tfrecord, tfrecord_2_masked_thumb
-method:             image_2_tfrecord
+method:               image_2_tfrecord
 
-image_file_name:    ../data/images/CMU-1-Small-Region.svs
-output_dir:         ../../run_dir/results
-patch_height:       224
-patch_width:        224
+image_file_name:      ../data/images/CMU-1-Small-Region.svs
+output_dir:           ../../run_dir/results
+patch_height:         224
+patch_width:          224
+patch_select_method:  threshold_otsu
 
-drop_threshold:     0.5
-file_ext:           jpg
+drop_threshold:       0.9
+file_ext:             .jpg
 
