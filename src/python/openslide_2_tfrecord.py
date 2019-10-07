@@ -306,7 +306,16 @@ def get_row_col_from_patch_name(fname):
     return {'base_name': parts_list[0], 'file_ext': file_ext, 'row': row, 'col': col }
 
 def find_thumb_nail_scale_divisor(pixels_height, pixels_width, max_thumb_size=WORKING_THUMB_MAX_SIZE[0]):
-    """  """
+    """ find an even divisor for pixel height and width to satisfy the max size constraint
+
+    Args:
+        pixels_height:      number of pixels high in full size image
+        pixels_width:       number of pixels wide
+        max_thumb_size:     constraint on edge size limit for both height and width
+
+    Returns:
+        thumbnail_divisor:  recommended divisor for pixels_height, pixels_width
+    """
     thumbnail_divisor = 1
     scale_determinant = max(pixels_height, pixels_width)
 
