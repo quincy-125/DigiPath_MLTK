@@ -11,6 +11,7 @@ import argparse
 import numpy as np
 import yaml
 from skimage.filters import threshold_otsu
+from skimage.color import rgb2lab
 import openslide
 
 import PIL
@@ -358,6 +359,18 @@ def get_mask_w_scale_grid(os_obj, patch_height, patch_width, patch_select_method
     pixels_height = os_obj.dimensions[1]
     pixels_width = os_obj.dimensions[0]
 
+    """
+    #  extract patches from arbitrary level
+    #  paramaterize divisor
+    #  rename thumbnail  
+    
+    
+                                case 4
+    case id == folder name
+    label
+    
+    """
+
     full_scale_rows_dict = get_adjcent_segmented_length_fence_array(segment_length=patch_height, 
                                                                     length=pixels_height)
     full_scale_cols_dict = get_adjcent_segmented_length_fence_array(segment_length=patch_width, 
@@ -408,8 +421,17 @@ def get_image_sample_selection_mask(one_thumb, patch_select_method):
     if patch_select_method == 'threshold_otsu':
         grey_thumbnail = np.array(one_thumb.convert('L'))
         thresh = threshold_otsu(grey_thumbnail)
-        mask = np.array(grey_thumbnail) < thresh
-        mask_im = PIL.Image.fromarray(np.uint8(mask) * 255)
+        mask_im = np.array(grey_thumbnail) < thresh
+        mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
+
+    elif patch_select_method == 'threshold_rgb2lab':
+        thresh = 80
+        np_img = np.array(one_thumb.convert('RGB'))
+        np_img = rgb2lab(np_img)
+        np_img = np_img[:,:,0]
+        mask_im = np.array(np_img) < thresh
+        mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
+
     else:
         print('patch_select_method %s not implemented'%(patch_select_method))
 
