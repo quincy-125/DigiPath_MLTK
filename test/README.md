@@ -1,16 +1,16 @@
 # Test using Makefile.
 Clone repository, cd to (test) directory.
 
-
-# Unit Tests:
 ****
+# Unit Tests:
 ```
 make unit_tests
 ```
 
-# Run with parameters set in yaml file
 ****
-Run make to setup a test environment at the same level as the cloned repo.
+# Run with parameters set in yaml file:
+Setup a test environment at the same level as the cloned repo.
+Edit the yaml file copied to the run directory.
 ```
 make env_setup
 ```
