@@ -1,6 +1,15 @@
 # Test using Makefile.
 Clone repository, cd to (test) directory.
 
+
+# Unit Tests:
+****
+```
+make unit_tests
+```
+
+# Run with parameters set in yaml file
+****
 Run make to setup a test environment at the same level as the cloned repo.
 ```
 make env_setup
@@ -49,3 +58,4 @@ user	0m3.557s
 sys	0m0.457s
 ```
 View the output file to confirm
+
