@@ -49,3 +49,9 @@ user	0m3.557s
 sys	0m0.457s
 ```
 View the output file to confirm
+
+# Unit Tests:
+****
+```
+make unit_tests
+```
