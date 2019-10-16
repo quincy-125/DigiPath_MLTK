@@ -53,3 +53,46 @@ def patch_name_to_dict(patch_file_name):
                              'file_type': '.' + name_type_list[-1]}
     
     return patch_image_name_dict
+
+
+def get_fence_array(patch_length, overall_length):
+    """ create a left-right set of pairs that descrete overall_length into patch_length segments
+    Usage: fence_array = get_fence_array(patch_length, overall_length)
+
+    Args:
+        patch_length:   patch size - number of pixels high or wide
+        patch_length:   overall number of pixels high or wide
+
+    Returns:
+        fence_array:    boundry values for each segment
+        -----------:    [[left_0, right_0],
+                         [left_1, right_1],
+                         [left_2, right_2],... ]
+    """
+    # Determine the array size
+    n_fenced = overall_length // patch_length  # number of boxes
+    n_remain = 1 + overall_length % patch_length  # number of pixels leftover
+    paddit = n_remain // 2  # padding for the beginning
+
+    if n_remain == patch_length:  # exact fit special case: exactly one left over
+        paddit = 0
+        n_fenced = n_fenced + 1
+
+    # Allocate as integers for use as indices
+    fence_array = np.zeros((n_fenced, 2)).astype(int)
+    for k in range(n_fenced):
+        # for each box edge, get the beginning and end pixel location
+        if k == 0:
+            # first case special (padding)
+            fence_array[k, 0] = paddit
+            # add the width to it
+            fence_array[k, 1] = fence_array[k, 0] + patch_length - 1
+
+        elif fence_array[k - 1, 1] + patch_length <= overall_length:
+            # Previous right pixel plus one
+            fence_array[k, 0] = fence_array[k - 1, 1] + 1
+            # add the width to it
+            fence_array[k, 1] = fence_array[k, 0] + patch_length - 1
+
+    return fence_array
+
