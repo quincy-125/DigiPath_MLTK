@@ -5,9 +5,11 @@ RESULTS_DIR = $(RUN_DIR)/results
 
 MKDIR_P = mkdir -p
 
-env_setup: create_run_dir copy_run_files
+env_setup:	create_run_dir copy_run_files
 
-unit_test: unit_test_filename unit_test_fences
+unit_test:	unit_test_filename unit_test_fences unit_test_run_parameters
+
+unit_test_py3:	unit_test_3_filename unit_test_3_fences unit_test_3_run_parameters
 
 create_run_dir:
 	$(MKDIR_P) $(RESULTS_DIR)
@@ -38,3 +40,15 @@ unit_test_filename:
 unit_test_fences:
 	python unittest/test_get_fence_array.py
  
+unit_test_run_parameters:
+	python unittest/test_get_run_parameters.py
+
+unit_test_3_filename:
+	python3 unittest/test_file_name_encoding.py
+
+unit_test_3_fences:
+	python3 unittest/test_get_fence_array.py
+ 
+unit_test_3_run_parameters:
+	python3 unittest/test_get_run_parameters.py
+

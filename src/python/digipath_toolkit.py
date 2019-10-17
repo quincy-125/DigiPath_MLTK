@@ -1,7 +1,48 @@
 import os
 import sys
+import argparse
 
 import numpy as np
+import yaml
+
+def get_run_directory_and_run_file(args):
+    """ Parse the input arguments to get the run_directory and run_file
+    Args:
+        system args:     -run_directory, -run_file (as below)
+
+    Returns:
+        run_directory:      where run_file is expected
+        run_file:           yaml file with run parameters
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-run_directory', type=str)
+    parser.add_argument('-run_file', type=str)
+    args = parser.parse_args()
+
+    run_directory = args.run_directory
+    run_file = args.run_file
+
+    return run_directory, run_file
+
+
+def get_run_parameters(run_directory, run_file):
+    """ Read the input arguments into a dictionary
+    Args:
+        run_directory:      where run_file is expected
+        run_file:           yaml file with run parameters
+
+    Returns:
+        run_parameters:     python dictionary of run parameters
+    """
+    run_file_name = os.path.join(run_directory, run_file)
+    with open(run_file_name, 'r') as fh:
+        run_parameters = yaml.safe_load(fh)
+    run_parameters['run_directory'] = run_directory
+    run_parameters['run_file'] = run_file
+
+    return run_parameters
+
+
 
 def dict_to_patch_name(patch_image_name_dict):
     """ Usage:
