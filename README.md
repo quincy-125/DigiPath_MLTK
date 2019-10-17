@@ -1,4 +1,5 @@
 # DigiPath_MLTK
+_minimal operating instructions_ <br>
 Note Code is undergoing revision this week & may requires some python hacking. <br>
 _This readme will be revised for next week (10/21/19)._ <br>
 ****
