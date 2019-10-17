@@ -5,7 +5,7 @@ _This readme will be revised for next week (10/21/19)._ <br>
 ****
 ## Requirements:
 ```
-# python 3.4 or later
+# python 3.5 or later
 pip3 install requirements.txt
 ```
 ****
