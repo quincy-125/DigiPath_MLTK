@@ -23,11 +23,13 @@ Setting the "method" parameter sends the run parameters to the execution functio
   _DigiPath_MLTK/src/python/openslide_2_tfrecord.py_ <br>
 
 ## Using the _digipath_toolkit.py_ module in your code:
+Set the __python__ sys path to include the file location before importing a file as a python module. <br>
 ```
 import sys
 sys.path.insert(0, 'relative path from your code')
 from digipath_toolkit import *
 ```
+_note that PYTHONPATH env variable and os.path are virtually unknown to python import_
 ## Use the python native help system:
 ```
 help(dict_to_patch_name)
