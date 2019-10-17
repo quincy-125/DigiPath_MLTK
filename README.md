@@ -18,7 +18,7 @@ SELECT = {"image_2_tfrecord": image_2_tfrecord,
           "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb}
 ```
 Setting the "method" parameter sends the run parameters to the execution function in <br>
-  _DigiPath_MLTK/src/python/digipath_toolkit.py_ <br>
+  _DigiPath_MLTK/src/python/openslide_2_tfrecord.py_ <br>
 
 ## Using the _digipath_toolkit.py_ module in your code:
 ```
