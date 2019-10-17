@@ -3,6 +3,12 @@ _minimal operating instructions_ <br>
 Note Code is undergoing revision this week & may requires some python hacking. <br>
 _This readme will be revised for next week (10/21/19)._ <br>
 ****
+## Requirements:
+```
+# python 3.4 or later
+pip3 install requirements.txt
+```
+****
 ## Usage examples
 1 Clone or unzip this repository to your computer. <br>
 2 Create a run-directory and a results directory. <br>
