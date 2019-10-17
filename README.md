@@ -1,4 +1,6 @@
 # DigiPath_MLTK
+Note that the code is undergoing revision this week & may requires some python hacking. <br>
+This readme will be revised for next week. <br>
 ****
 ## Usage examples
 1 Clone or unzip this repository to your computer. <br>
