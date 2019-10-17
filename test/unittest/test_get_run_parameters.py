@@ -5,11 +5,14 @@ from unittest import TestCase
 
 import sys
 sys.path.insert(0, '../src/python')
-from digipath_toolkit import get_run_parameters
+from digipath_toolkit import get_run_parameters, get_run_directory_and_run_file
 
 class Test_run_pars(TestCase):
+
     def setUp(self):
         self.run_file = 'unit_test.yml'
+        self.mock_dir = '/mock/directory/path'
+        self.mock_file = 'whatta_notta_file.yml'
 
         self.test_str = ["# possible methods: image_2_tfrecord, tfrecord_2_masked_thumb",
                         "method:               image_2_tfrecord",
@@ -37,9 +40,22 @@ class Test_run_pars(TestCase):
 
     def tearDown(self):
         del self.run_file
+        del self.mock_dir
         del self.test_str
         del self.yaml_str
         del self.run_parameters
+
+
+    def test_get_run_directory_and_run_file(self):
+        sys.argv.append('-run_directory')
+        sys.argv.append(self.mock_dir)
+        sys.argv.append('-run_file')
+        sys.argv.append(self.mock_file)
+
+        run_directory, run_file = get_run_directory_and_run_file(sys.argv[1:])
+        
+        self.assertEqual(run_directory, self.mock_dir)
+        self.assertEqual(run_file, self.mock_file)
 
 
     def test_run_parameters(self):
