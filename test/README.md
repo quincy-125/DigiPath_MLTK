@@ -1,7 +1,20 @@
 # Test using Makefile.
 Clone repository, cd to (test) directory.
 
-Run make to setup a test environment at the same level as the cloned repo.
+****
+# Unit Tests:
+```
+make unit_tests_py3
+```
+## Or if python is python3:
+```
+make unit_tests
+```
+
+****
+# Run with parameters set in yaml file:
+Setup a test environment at the same level as the cloned repo.
+(Edit the yaml file copied to the run directory).
 ```
 make env_setup
 ```
@@ -49,3 +62,4 @@ user	0m3.557s
 sys	0m0.457s
 ```
 View the output file to confirm
+
