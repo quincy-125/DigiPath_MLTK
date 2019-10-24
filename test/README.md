@@ -4,11 +4,11 @@ Clone repository, cd to (test) directory.
 ****
 # Unit Tests:
 ```
-make unit_tests_py3
+make unit_tests
 ```
 ## Or if python is python3:
 ```
-make unit_tests
+make unit_tests_py3
 ```
 
 ****
