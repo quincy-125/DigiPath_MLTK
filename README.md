@@ -1,7 +1,6 @@
 # DigiPath_MLTK
-_minimal operating instructions_ <br>
-Note Code is undergoing revision this week & may requires some python hacking. <br>
-_This readme will be revised for next week (10/21/19)._ <br>
+### _Minimal operating instructions_ <br>
+_Note code works as described below and is new module will work with same command line calls._ <br>
 ****
 ## Requirements:
 ```
@@ -29,7 +28,7 @@ SELECT = {"image_2_tfrecord": image_2_tfrecord,
 Setting the "method" parameter sends the run parameters to the execution function in <br>
   _DigiPath_MLTK/src/python/openslide_2_tfrecord.py_ <br>
 
-## Importing _openslide_2_tfrecord.py_ or _digipath_toolkit.py_ module in your code:
+## Importing _digipath_toolkit.py_ module:
 Set the __python__ sys path to include the file location before importing a file as a python module. <br>
 ```
 import sys
