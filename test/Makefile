@@ -7,9 +7,9 @@ MKDIR_P = mkdir -p
 
 env_setup:	create_run_dir copy_run_files
 
-unit_test:	unit_test_filename unit_test_fences unit_test_run_parameters
+unit_test:	unit_test_filename unit_test_fences unit_test_run_parameters unit_test_sample_select
 
-unit_test_py3:	unit_test_3_filename unit_test_3_fences unit_test_3_run_parameters
+unit_test_py3:	unit_test_3_filename unit_test_3_fences unit_test_3_run_parameters unit_test_3_sample_select
 
 create_run_dir:
 	$(MKDIR_P) $(RESULTS_DIR)
@@ -43,6 +43,10 @@ unit_test_fences:
 unit_test_run_parameters:
 	python unittest/test_get_run_parameters.py
 
+unit_test_sample_select:
+	python unittest/test_get_sample_selection_mask.py
+
+
 unit_test_3_filename:
 	python3 unittest/test_file_name_encoding.py
 
@@ -51,4 +55,7 @@ unit_test_3_fences:
  
 unit_test_3_run_parameters:
 	python3 unittest/test_get_run_parameters.py
+
+unit_test_3_sample_select:
+	python3 unittest/test_get_sample_selection_mask.py
 

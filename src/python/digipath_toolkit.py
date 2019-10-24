@@ -1,9 +1,14 @@
 import os
-import sys
+# import sys
 import argparse
 
 import numpy as np
 import yaml
+
+from skimage.filters import threshold_otsu
+from skimage.color import rgb2lab
+
+import PIL.Image
 
 def get_run_directory_and_run_file(args):
     """ Parse the input arguments to get the run_directory and run_file
@@ -58,14 +63,14 @@ def dict_to_patch_name(patch_image_name_dict):
     Returns:
         patch_name:     file name (without directory path)
     """
-    if patch_image_name_dict['file_type'][0] != '.':
-        patch_image_name_dict['file_type'] = '.' + patch_image_name_dict['file_type']
+    if patch_image_name_dict['file_ext'][0] != '.':
+        patch_image_name_dict['file_ext'] = '.' + patch_image_name_dict['file_ext']
         
     patch_name = patch_image_name_dict['case_id']
     patch_name += '_%i'%patch_image_name_dict['location_x']
     patch_name += '_%i'%patch_image_name_dict['location_y'] 
     patch_name += '_%s'%patch_image_name_dict['class_label']
-    patch_name += '%s'%patch_image_name_dict['file_type']
+    patch_name += '%s'%patch_image_name_dict['file_ext']
     
     return patch_name
 
@@ -82,16 +87,19 @@ def patch_name_to_dict(patch_file_name):
                                  'location_x': int(field[1]), 
                                  'location_y': int(field[2]), 
                                  'class_label': field[3], 
-                                 'file_type': '.' + field[4] }
+                                 'file_ext': '.' + field[4] }
     """
-    name_type_list = patch_file_name.strip().split('.')
-    name_field_list = name_type_list[0].split('_')
+    name_part, file_ext = os.path.splitext(patch_file_name)
+    if len(file_ext) > 0 and file_ext[0] == '.':
+        file_ext = file_ext[1:]
+
+    name_field_list = name_part.split('_')
     
     patch_image_name_dict = {'case_id': name_field_list[0], 
                              'location_x': int(name_field_list[1]), 
                              'location_y': int(name_field_list[2]), 
                              'class_label': name_field_list[3], 
-                             'file_type': '.' + name_type_list[-1]}
+                             'file_ext': '.' + file_ext}
     
     return patch_image_name_dict
 
@@ -137,3 +145,27 @@ def get_fence_array(patch_length, overall_length):
 
     return fence_array
 
+
+def get_sample_selection_mask(small_im, patch_select_method):
+    """ get an image mask  -  Under  development: unit test
+    """
+    mask_im = None
+
+    if patch_select_method == 'threshold_rgb2lab':
+        thresh = 80
+        np_img = np.array(small_im.convert('RGB'))
+        np_img = rgb2lab(np_img)
+        np_img = np_img[:, :, 0]
+        mask_im = np.array(np_img) < thresh
+        mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
+
+    elif patch_select_method == 'threshold_otsu':
+        grey_thumbnail = np.array(small_im.convert('L'))
+        thresh = threshold_otsu(grey_thumbnail)
+        mask_im = np.array(grey_thumbnail) < thresh
+        mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
+
+    else:
+        print('patch_select_method %s not implemented' % (patch_select_method))
+
+    return mask_im
