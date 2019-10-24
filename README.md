@@ -1,6 +1,6 @@
 # DigiPath_MLTK
 ### _Minimal operating instructions_ <br>
-_Note code works as described below and is new module will work with same command line calls._ <br>
+_Note: code works as described below, the new module will use the same command line calls._ <br>
 ****
 ## Requirements:
 ```
@@ -36,24 +36,3 @@ sys.path.insert(0, 'relative path from your code')
 from digipath_toolkit import *
 ```
 _note that PYTHONPATH env variable and os.path are virtually unknown to python import_
-## Use the python native help system:
-```
-help(dict_to_patch_name)
-```
-Opens the help viewer with: <br>
-```
-dict_to_patch_name(patch_image_name_dict)
-    Usage:
-    patch_name = dict_to_patch_name(patch_image_name_dict) 
-    
-    Args:
-        patch_image_name_dict:  {'case_id': 'd83cc7d1c94', 
-                                 'location_x': 100, 
-                                 'location_y': 340, 
-                                 'class_label': 'dermis', 
-                                 'file_type': '.jpg' }
-        
-    Returns:
-        patch_name:     file name (without directory path)
-```
-
