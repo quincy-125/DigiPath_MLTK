@@ -157,15 +157,69 @@ def get_sample_selection_mask(small_im, patch_select_method):
         np_img = rgb2lab(np_img)
         np_img = np_img[:, :, 0]
         mask_im = np.array(np_img) < thresh
-        mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
+        # mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
 
     elif patch_select_method == 'threshold_otsu':
         grey_thumbnail = np.array(small_im.convert('L'))
         thresh = threshold_otsu(grey_thumbnail)
         mask_im = np.array(grey_thumbnail) < thresh
-        mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
+        # mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
 
     else:
         print('patch_select_method %s not implemented' % (patch_select_method))
 
     return mask_im
+
+
+def get_patch_location_array(run_parameters):
+    """ Usage: patch_location_array = get_patch_location_array(run_parameters)
+    Args:
+        run_parameters:     keys:
+                            image_file_name,
+                            thumbnail_divisor,
+                            patch_select_method,
+                            patch_height,
+                            patch_width
+    Returns:
+        patch_location_array
+
+    """
+    patch_location_array = []
+
+    image_file_name = run_parameters['image_file_name']
+    thumbnail_divisor = run_parameters['thumbnail_divisor']
+    patch_select_method = run_parameters['patch_select_method']
+    patch_height = run_parameters['patch_height']
+    patch_width = run_parameters['patch_width']
+
+    #                     OpenSlide open                      #
+    os_im_obj = openslide.OpenSlide(image_file_name)
+
+    pixels_height = os_im_obj.dimensions[1]
+    rows_fence_array = get_fence_array(patch_length=patch_height, overall_length=pixels_height)
+
+    pixels_width = os_im_obj.dimensions[0]
+    cols_fence_array = get_fence_array(patch_length=patch_width, overall_length=pixels_width)
+
+    small_im = os_im_obj.get_thumbnail((pixels_height // thumbnail_divisor,
+                                        pixels_width // thumbnail_divisor))
+    os_im_obj.close()
+    #                     OpenSlide close                     #
+
+    mask_im = get_sample_selection_mask(small_im, patch_select_method)
+
+    it_rows = zip(rows_fence_array[:, 0] // thumbnail_divisor,
+                  rows_fence_array[:, 1] // thumbnail_divisor,
+                  rows_fence_array[:, 0])
+
+    lft_cols = cols_fence_array[:, 0] // thumbnail_divisor
+    rgt_cols = cols_fence_array[:, 1] // thumbnail_divisor
+    cols_array = cols_fence_array[:, 0]
+
+    for tmb_row_top, tmb_row_bot, row_n in it_rows:
+        it_cols = zip(lft_cols, rgt_cols, cols_array)
+        for tmb_col_lft, tmb_col_rgt, col_n in it_cols:
+            if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > 0:
+                patch_location_array.append((row_n, col_n))
+
+    return patch_location_array
