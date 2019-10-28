@@ -1,5 +1,5 @@
 import os
-# import sys
+from collections import OrderedDict
 import argparse
 
 import numpy as np
@@ -8,7 +8,7 @@ import yaml
 from skimage.filters import threshold_otsu
 from skimage.color import rgb2lab
 
-import PIL.Image
+import openslide
 
 def get_run_directory_and_run_file(args):
     """ Parse the input arguments to get the run_directory and run_file
@@ -47,6 +47,36 @@ def get_run_parameters(run_directory, run_file):
 
     return run_parameters
 
+
+def get_file_size_ordered_dict(data_dir, file_type_list):
+    """ Usage:  file_size_ordered_dict = get_file_size_ordered_dict
+                get size-ranked list of files of type in a directory
+    Args:
+        data_dir:           path to directory
+        file_type_list:     file type extensions list (including period) e.g. = ['.svs', '.tif', '.tiff']
+
+    Returns:
+        ordered_dictionary: file_name: file_size   (ordered by file size)
+    """
+    file_size_ordered_dict = OrderedDict()
+    if os.path.isdir(data_dir) == True:
+        file_size_dict = {}
+        for f in os.listdir(data_dir):
+            ff = os.path.join(data_dir, f)
+            if os.path.isfile(ff):
+                _, f_ext = os.path.splitext(ff)
+                if f_ext in file_type_list:
+                    file_size_dict[f] = os.path.getsize(ff)
+
+        file_size_dict_keys = list(file_size_dict.keys())
+        sizes_idx = np.argsort(np.array(list(file_size_dict.values())))
+        for idx in sizes_idx:
+            k = file_size_dict_keys[idx]
+            file_size_ordered_dict[k] = file_size_dict[k]
+    else:
+        file_size_ordered_dict['Directory Not Found: ' + data_dir] = 0
+
+    return file_size_ordered_dict
 
 
 def dict_to_patch_name(patch_image_name_dict):
@@ -157,13 +187,11 @@ def get_sample_selection_mask(small_im, patch_select_method):
         np_img = rgb2lab(np_img)
         np_img = np_img[:, :, 0]
         mask_im = np.array(np_img) < thresh
-        # mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
 
     elif patch_select_method == 'threshold_otsu':
         grey_thumbnail = np.array(small_im.convert('L'))
         thresh = threshold_otsu(grey_thumbnail)
         mask_im = np.array(grey_thumbnail) < thresh
-        # mask_im = PIL.Image.fromarray(np.uint8(mask_im) * 255)
 
     else:
         print('patch_select_method %s not implemented' % (patch_select_method))
