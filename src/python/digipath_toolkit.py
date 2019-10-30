@@ -8,6 +8,8 @@ import yaml
 from skimage.filters import threshold_otsu
 from skimage.color import rgb2lab
 
+from PIL import ImageDraw
+
 import openslide
 
 def get_run_directory_and_run_file(args):
@@ -93,7 +95,7 @@ def dict_to_patch_name(patch_image_name_dict):
     Returns:
         patch_name:     file name (without directory path)
     """
-    if patch_image_name_dict['file_ext'][0] != '.':
+    if len(patch_image_name_dict['file_ext']) > 1 and patch_image_name_dict['file_ext'][0] != '.':
         patch_image_name_dict['file_ext'] = '.' + patch_image_name_dict['file_ext']
         
     patch_name = patch_image_name_dict['case_id']
@@ -203,7 +205,7 @@ def get_patch_location_array(run_parameters):
     """ Usage: patch_location_array = get_patch_location_array(run_parameters)
     Args:
         run_parameters:     keys:
-                            image_file_name,
+                            wsi_filename,
                             thumbnail_divisor,
                             patch_select_method,
                             patch_height,
@@ -214,14 +216,14 @@ def get_patch_location_array(run_parameters):
     """
     patch_location_array = []
 
-    image_file_name = run_parameters['image_file_name']
+    wsi_filename = run_parameters['wsi_filename']
     thumbnail_divisor = run_parameters['thumbnail_divisor']
     patch_select_method = run_parameters['patch_select_method']
     patch_height = run_parameters['patch_height']
     patch_width = run_parameters['patch_width']
 
     #                     OpenSlide open                      #
-    os_im_obj = openslide.OpenSlide(image_file_name)
+    os_im_obj = openslide.OpenSlide(wsi_filename)
 
     pixels_height = os_im_obj.dimensions[1]
     rows_fence_array = get_fence_array(patch_length=patch_height, overall_length=pixels_height)
@@ -229,8 +231,8 @@ def get_patch_location_array(run_parameters):
     pixels_width = os_im_obj.dimensions[0]
     cols_fence_array = get_fence_array(patch_length=patch_width, overall_length=pixels_width)
 
-    small_im = os_im_obj.get_thumbnail((pixels_height // thumbnail_divisor,
-                                        pixels_width // thumbnail_divisor))
+    thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
+    small_im = os_im_obj.get_thumbnail(thumbnail_size)
     os_im_obj.close()
     #                     OpenSlide close                     #
 
@@ -251,3 +253,95 @@ def get_patch_location_array(run_parameters):
                 patch_location_array.append((row_n, col_n))
 
     return patch_location_array
+
+
+def get_patch_locations_preview_image(run_parameters):
+    """ Usage: thumb_preview = get_patch_locations_preview_image(run_parameters)
+    """
+    wsi_filename = run_parameters['wsi_filename']
+    thumbnail_divisor = run_parameters['thumbnail_divisor']
+    patch_height = run_parameters['patch_height'] // thumbnail_divisor - 1
+    patch_width = run_parameters['patch_width'] // thumbnail_divisor - 1
+    border_color = run_parameters['border_color']
+
+    os_im_obj = openslide.OpenSlide(wsi_filename)
+    pixels_width = os_im_obj.dimensions[0]
+    pixels_height = os_im_obj.dimensions[1]
+    thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
+    thumb_preview = os_im_obj.get_thumbnail(thumbnail_size)
+    os_im_obj.close()
+
+    thumb_draw = ImageDraw.Draw(thumb_preview)
+    patch_location_array = get_patch_location_array(run_parameters)
+
+    for r, c in patch_location_array[:]:
+        ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
+        lrc = (ulc[0] + patch_width, ulc[1] + patch_height)
+        thumb_draw.rectangle((ulc, lrc), outline=border_color, fill=None)
+
+    return thumb_preview, patch_location_array
+
+
+def image_file_to_patches_directory(run_parameters):
+    """ Usage:
+    number_images_found = image_file_to_patches_directory(run_parameters)
+
+    Args:
+        image_file_name:    file name (with valid path)
+        output_dir:      writeable directory for the tfrecord
+        patch_size:      1 integer
+        drop_threshold:  number between 0 & 1 -- if the masked area of the patch is smaller it is included
+        file_ext:        default is '.jpg' ('.png') was tested (Note the period is included)
+
+    Returns:
+        svs_file_conversion_dict:  {'mask_dict': mask_dict,
+                                    'tfrecord_file_name': tfrecord_file_name,
+                                    'number_of_patches': seq_number,
+                                    'temp_dir': temp_dir }
+    """
+    image_file_name = run_parameters['wsi_filename']
+    output_dir = run_parameters['output_dir']
+    class_label = run_parameters['class_label']
+    # thumbnail_divisor = run_parameters['thumbnail_divisor']
+    patch_width = run_parameters['patch_width']
+    patch_height = run_parameters['patch_height']
+    # patch_select_method = run_parameters['patch_select_method']
+    file_ext = run_parameters['file_ext']
+
+    patch_size = (patch_width, patch_height)
+
+    if len(file_ext) == 0:
+        file_ext = '.jpg'
+    elif file_ext[0] != '.':
+        file_ext = '.' + file_ext
+
+    _, file_name_base = os.path.split(image_file_name)
+    file_name_base, _ = os.path.splitext(file_name_base)
+    # tfrecord_file_name = file_name_base + '.tfrecords'
+    # tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
+
+    patch_location_array = get_patch_location_array(run_parameters)
+    number_images_found = len(patch_location_array)
+    patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
+
+    # get the OpenSlide object - open the file, and get the mask with the scaled grids
+    os_obj = openslide.OpenSlide(image_file_name)
+
+    # iterate the list of locations found
+    for read_location in patch_location_array:
+        # build the patch name
+        patch_image_name_dict['location_x'] = read_location[1]
+        patch_image_name_dict['location_y'] = read_location[0]
+        patch_name = dict_to_patch_name(patch_image_name_dict)
+        patch_full_name = os.path.join(output_dir, patch_name)
+        location = (read_location[1], read_location[0])
+
+        # OpenSlide extract, convert, save
+        patch_image = os_obj.read_region(location=location, level=0, size=patch_size)
+        patch_image = patch_image.convert('RGB')
+        # image_depth = 3
+        patch_image.save(patch_full_name)
+
+    os_obj.close()
+
+    return number_images_found
