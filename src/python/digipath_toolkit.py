@@ -9,6 +9,7 @@ from skimage.filters import threshold_otsu
 from skimage.color import rgb2lab
 
 from PIL import ImageDraw
+from PIL import TiffImagePlugin as tip
 
 import openslide
 
@@ -259,6 +260,7 @@ def get_patch_locations_preview_image(run_parameters):
     """ Usage: thumb_preview = get_patch_locations_preview_image(run_parameters)
     """
     wsi_filename = run_parameters['wsi_filename']
+    patch_select_method = run_parameters['patch_select_method']
     thumbnail_divisor = run_parameters['thumbnail_divisor']
     patch_height = run_parameters['patch_height'] // thumbnail_divisor - 1
     patch_width = run_parameters['patch_width'] // thumbnail_divisor - 1
@@ -271,6 +273,9 @@ def get_patch_locations_preview_image(run_parameters):
     thumb_preview = os_im_obj.get_thumbnail(thumbnail_size)
     os_im_obj.close()
 
+    mask_image = get_sample_selection_mask(thumb_preview, patch_select_method)
+    mask_image = tip.Image.fromarray(np.uint8(mask_image * 255), 'L')
+
     thumb_draw = ImageDraw.Draw(thumb_preview)
     patch_location_array = get_patch_location_array(run_parameters)
 
@@ -278,8 +283,8 @@ def get_patch_locations_preview_image(run_parameters):
         ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
         lrc = (ulc[0] + patch_width, ulc[1] + patch_height)
         thumb_draw.rectangle((ulc, lrc), outline=border_color, fill=None)
-
-    return thumb_preview, patch_location_array
+    
+    return mask_image, thumb_preview, patch_location_array
 
 
 def image_file_to_patches_directory(run_parameters):
