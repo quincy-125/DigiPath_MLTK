@@ -16,7 +16,7 @@ make unit_tests_py3
 ```
 
 ****
-# Run with yaml file in run_dir:
+# Test with yaml file in run_dir from _DigiPath_MLTK/test_ directory:
 ## setup command:
 ```
 make env_setup
