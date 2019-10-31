@@ -37,8 +37,8 @@ Edit _wsi_file_to_patches_dir.yml_ that was copied with _make env_setup_
 run with make from _DigiPath_MLTK/test_ directory:
 ```
 make test_wsi_2_patches_dir
-77 images found
 ```
+`77 images found`
 will report the number of images found with the yaml file parameters
 
 ****
