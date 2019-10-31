@@ -34,7 +34,6 @@ make test_write_mask_preview
 `	../../run_dir/CMU-1-Small-Regionmarked_thumb.jpg` <br>
 `	../../run_dir/CMU-1-Small-Regionmask.jpg` <br>
 `	../../run_dir/CMU-1-Small-Regionpatch_locations.tsv` <br>
-(successfull run will print the file names as shown)
 
 ## test 2 - write wsi image file with label to folder:
 Edit _wsi_file_to_patches_dir.yml_ that was copied with _make env_setup_ <br>
@@ -43,7 +42,6 @@ run with make from _DigiPath_MLTK/test_ directory:
 make test_wsi_2_patches_dir
 ```
 `77 images found` <br>
-will report the number of images found with the yaml file parameters
 
 ## still working - depreciated methods (refactoring):
 ****
