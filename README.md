@@ -1,5 +1,5 @@
 # DigiPath_MLTK
-### _Minimal operating instructions_ <br>
+### _See Test Dir Make Readme_ <br>
 _Note: code works as described below, the new module will use the same command line calls._ <br>
 ****
 ## Requirements:

@@ -1,6 +1,10 @@
 # Test using Makefile.
-Clone repository, cd to (test) directory.
-
+Clone repository, cd to (test) directory. <br>
+_Note: there are two make targets for each test, python3 or python_ <br>
+View in test directory:
+```
+cat Makefile
+```
 ****
 # Unit Tests:
 ```
@@ -12,15 +16,35 @@ make unit_tests_py3
 ```
 
 ****
-# Run with parameters set in yaml file:
-Setup a test environment at the same level as the cloned repo.
-(Edit the yaml file copied to the run directory).
+# Test from _DigiPath_MLTK/test_ with yaml file in run_dir:
+## setup command:
 ```
 make env_setup
 ```
 - creates ../../run_dir/results 
 - moves yaml files into ../../run_dir/
 
+## test 1 - preview mask images & patch locations:
+Edit _write_mask_preview.yml_ that was copied with _make env_setup_ <br>
+run with make in _DigiPath_MLTK/test_ directory:
+```
+make test_write_mask_preview
+```
+`mask preview set saved:` <br>
+`	../../run_dir/CMU-1-Small-Regionmarked_thumb.jpg` <br>
+`	../../run_dir/CMU-1-Small-Regionmask.jpg` <br>
+`	../../run_dir/CMU-1-Small-Regionpatch_locations.tsv` <br>
+
+## test 2 - write wsi image file with label to folder:
+Edit _wsi_file_to_patches_dir.yml_ that was copied with _make env_setup_ <br>
+run with make from _DigiPath_MLTK/test_ directory:
+```
+make test_wsi_2_patches_dir
+```
+`77 images found` <br>
+
+## still working - depreciated methods (refactoring):
+****
 Test that the .svs file in ../data/images/ is converted to a TFRecord:
 ```
 time make test_im_2_tfr
