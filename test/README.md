@@ -25,11 +25,12 @@ Edit _write_mask_preview.yml_ that was copied with _make env_setup_
 run with make in _DigiPath_MLTK/test_ directory:
 ```
 make test_write_mask_preview
-mask preview set saved:
+
+```
+`mask preview set saved:
 	../../run_dir/CMU-1-Small-Regionmarked_thumb.jpg
 	../../run_dir/CMU-1-Small-Regionmask.jpg
-	../../run_dir/CMU-1-Small-Regionpatch_locations.tsv
-```
+	../../run_dir/CMU-1-Small-Regionpatch_locations.tsv` <br>
 (successfull run will print the file names as shown)
 
 ## write wsi image file with label to folder:
