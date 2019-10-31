@@ -41,7 +41,7 @@ make test_wsi_2_patches_dir
 `77 images found` <br>
 will report the number of images found with the yaml file parameters
 
-## depreciated methods - (refactoring):
+## still working - depreciated methods (refactoring):
 ****
 Test that the .svs file in ../data/images/ is converted to a TFRecord:
 ```
