@@ -25,12 +25,11 @@ Edit _write_mask_preview.yml_ that was copied with _make env_setup_
 run with make in _DigiPath_MLTK/test_ directory:
 ```
 make test_write_mask_preview
-
 ```
-`mask preview set saved:
-	../../run_dir/CMU-1-Small-Regionmarked_thumb.jpg
-	../../run_dir/CMU-1-Small-Regionmask.jpg
-	../../run_dir/CMU-1-Small-Regionpatch_locations.tsv` <br>
+`mask preview set saved:` <br>
+`	../../run_dir/CMU-1-Small-Regionmarked_thumb.jpg` <br>
+`	../../run_dir/CMU-1-Small-Regionmask.jpg` <br>
+`	../../run_dir/CMU-1-Small-Regionpatch_locations.tsv` <br>
 (successfull run will print the file names as shown)
 
 ## write wsi image file with label to folder:
@@ -39,9 +38,10 @@ run with make from _DigiPath_MLTK/test_ directory:
 ```
 make test_wsi_2_patches_dir
 ```
-`77 images found`
+`77 images found` <br>
 will report the number of images found with the yaml file parameters
 
+## depreciated methods - (refactoring):
 ****
 Test that the .svs file in ../data/images/ is converted to a TFRecord:
 ```
