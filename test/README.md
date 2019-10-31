@@ -12,9 +12,8 @@ make unit_tests_py3
 ```
 
 ****
-# Run with parameters set in yaml file:
-Setup a test environment at the same level as the cloned repo.
-(Edit the yaml file copied to the run directory).
+# Run with yaml file in run_dir:
+## setup command:
 ```
 make env_setup
 ```
