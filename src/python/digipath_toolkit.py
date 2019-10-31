@@ -3,6 +3,7 @@ from collections import OrderedDict
 import argparse
 
 import numpy as np
+import pandas as pd
 import yaml
 
 from skimage.filters import threshold_otsu
@@ -314,6 +315,45 @@ def get_patch_locations_preview_image(run_parameters):
 
     return mask_image, thumb_preview, patch_location_array
 
+def write_mask_preview_set(run_parameters):
+    """
+    Args (run_parameters):  python dict.keys()
+                                wsi_filename:           file name (with valid path)
+                                output_dir:             where the three files will be written
+                                border_color:           patch-box representation color 'red', 'blue' etc
+                                patch_height:           patch size = (patch_width, patch_height)
+                                patch_width:            patch size = (patch_width, patch_height)
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+    Returns:
+        None:               Writes three files:
+                                wsi_basename_marked_thumb
+                                wsi_basename_mask
+                                wsi_basename_patch_locations
+    """
+    output_dir = run_parameters['output_dir']
+    wsi_filename = run_parameters['wsi_filename']
+    _, wsi_file_base = os.path.split(wsi_filename)
+    wsi_file_base, _ = os.path.splitext(wsi_file_base)
+
+    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_image(run_parameters)
+
+    thumb_preview_filename = os.path.join(output_dir, wsi_file_base + 'marked_thumb.jpg')
+    with open(thumb_preview_filename, 'w') as fh:
+        thumb_preview.save(fh)
+
+    mask_preview_filename = os.path.join(output_dir, wsi_file_base + 'mask.jpg')
+    with open(mask_preview_filename, 'w') as fh:
+        mask_image.save(fh)
+
+    location_array_filename = os.path.join(output_dir, wsi_file_base + 'patch_locations.tsv')
+    patchlocation_df = pd.DataFrame(patch_location_array, columns=['row', 'col'])
+    patchlocation_df.index.name = '#'
+    patchlocation_df.to_csv(location_array_filename, sep='\t')
+
+    print('mask preview set saved:\n\t%s\n\t%s\n\t%s'%(thumb_preview_filename,
+                                                       mask_preview_filename,
+                                                       location_array_filename))
 
 def image_file_to_patches_directory(run_parameters):
     """ Usage: number_images_found = image_file_to_patches_directory(run_parameters)
@@ -328,9 +368,8 @@ def image_file_to_patches_directory(run_parameters):
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
                                 patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
 
-    Returns:
-        number_images_found:    number selected using patch_select_method parameter
-        
+    Returns:                    None                    (prints number_images_found after all else)
+
     """
     image_file_name = run_parameters['wsi_filename']
     output_dir = run_parameters['output_dir']
@@ -340,6 +379,10 @@ def image_file_to_patches_directory(run_parameters):
     file_ext = run_parameters['file_ext']
 
     patch_size = (patch_width, patch_height)
+
+    if os.path.isdir(output_dir) == False:
+        print('creating output directory:\n%s\n'%(output_dir))
+        os.makedirs(output_dir)
 
     if len(file_ext) == 0:
         file_ext = '.jpg'
@@ -371,5 +414,5 @@ def image_file_to_patches_directory(run_parameters):
         patch_image.save(patch_full_name)
 
     os_obj.close()
-
-    return number_images_found
+    print('%i images found'%(number_images_found))
+    # return number_images_found
