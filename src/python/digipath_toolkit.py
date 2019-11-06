@@ -237,14 +237,16 @@ def get_patch_location_array(run_parameters):
     threshold = run_parameters['threshold']
     patch_height = run_parameters['patch_height']
     patch_width = run_parameters['patch_width']
+    image_level = run_parameters['image_level']
 
     #                     OpenSlide open                      #
     os_im_obj = openslide.OpenSlide(wsi_filename)
+    obj_level_diminsions = os_im_obj.level_dimensions
 
-    pixels_height = os_im_obj.dimensions[1]
+    pixels_height = obj_level_diminsions[image_level][1]
     rows_fence_array = get_fence_array(patch_length=patch_height, overall_length=pixels_height)
 
-    pixels_width = os_im_obj.dimensions[0]
+    pixels_width = obj_level_diminsions[image_level][0]
     cols_fence_array = get_fence_array(patch_length=patch_width, overall_length=pixels_width)
 
     thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
@@ -297,8 +299,10 @@ def get_patch_locations_preview_image(run_parameters):
     border_color = run_parameters['border_color']
 
     os_im_obj = openslide.OpenSlide(wsi_filename)
+
     pixels_width = os_im_obj.dimensions[0]
     pixels_height = os_im_obj.dimensions[1]
+
     thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
     thumb_preview = os_im_obj.get_thumbnail(thumbnail_size)
     os_im_obj.close()
