@@ -5,11 +5,14 @@ wsi_filename:           ../data/images/CMU-1-Small-Region.svs
 output_dir:             ../../run_dir
 
 thumbnail_divisor:      5
+
 patch_width:            224
 patch_height:           224
 
 #                       threshold_otsu, threshold_rgb2lab
 patch_select_method:    threshold_rgb2lab
+threshold:              0
+image_level:            0
 
 #                       red, blue, green, yellow, black,...
 border_color:           red

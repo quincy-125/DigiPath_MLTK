@@ -234,6 +234,7 @@ def get_patch_location_array(run_parameters):
     wsi_filename = run_parameters['wsi_filename']
     thumbnail_divisor = run_parameters['thumbnail_divisor']
     patch_select_method = run_parameters['patch_select_method']
+    threshold = run_parameters['threshold']
     patch_height = run_parameters['patch_height']
     patch_width = run_parameters['patch_width']
 
@@ -264,7 +265,7 @@ def get_patch_location_array(run_parameters):
     for tmb_row_top, tmb_row_bot, row_n in it_rows:
         it_cols = zip(lft_cols, rgt_cols, cols_array)
         for tmb_col_lft, tmb_col_rgt, col_n in it_cols:
-            if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > 0:
+            if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > threshold:
                 patch_location_array.append((row_n, col_n))
 
     return patch_location_array
@@ -376,6 +377,7 @@ def image_file_to_patches_directory(run_parameters):
     class_label = run_parameters['class_label']
     patch_width = run_parameters['patch_width']
     patch_height = run_parameters['patch_height']
+    image_level = run_parameters['image_level']
     file_ext = run_parameters['file_ext']
 
     patch_size = (patch_width, patch_height)
@@ -409,7 +411,7 @@ def image_file_to_patches_directory(run_parameters):
         location = (read_location[1], read_location[0])
 
         # OpenSlide extract, convert, save
-        patch_image = os_obj.read_region(location=location, level=0, size=patch_size)
+        patch_image = os_obj.read_region(location=location, level=image_level, size=patch_size)
         patch_image = patch_image.convert('RGB')
         patch_image.save(patch_full_name)
 
