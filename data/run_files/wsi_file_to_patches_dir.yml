@@ -1,0 +1,21 @@
+
+method:                 wsi_2_patches_dir
+
+#                       output_dir will be created if DNE
+wsi_filename:           ../data/images/CMU-1-Small-Region.svs
+output_dir:             ../../run_dir/results
+class_label:            patch_label
+
+#                       positive integers:
+thumbnail_divisor:      10
+
+patch_width:            224
+patch_height:           224
+
+#                       threshold_otsu, threshold_rgb2lab
+patch_select_method:    threshold_rgb2lab
+threshold:              0
+image_level:            0
+
+#                       .jpg, .tif, .png
+file_ext:               .jpg

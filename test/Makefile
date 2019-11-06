@@ -23,12 +23,23 @@ test_im_2_tfr:
 test_tfr_2_mthumb:
 	python3 $(SCRIPT) -run_directory $(RUN_DIR) -run_file tfrecord_to_masked_thumb.yml
 
+test_wsi_2_patches_dir:
+	python3 $(SCRIPT) -run_directory $(RUN_DIR) -run_file wsi_file_to_patches_dir.yml
+
+test_write_mask_preview:
+	python3 $(SCRIPT) -run_directory $(RUN_DIR) -run_file write_mask_previews.yml
+
 test_im_2_tfr_python2:
 	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file image_files_to_tfrecord.yml
 
 test_tfr_2_mthumb_python2:
 	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file tfrecord_to_masked_thumb.yml
 
+test_wsi_2_patches_dir_python2:
+	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file wsi_file_to_patches_dir.yml
+
+test_write_mask_preview_python2:
+	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file write_mask_previews.yml
 
 # # # # # # # 
 # Uint tests

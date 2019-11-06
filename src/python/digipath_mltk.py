@@ -14,8 +14,18 @@ def tfrecord_2_masked_thumb(run_parameters):
     from openslide_2_tfrecord import write_tfrecord_masked_thumbnail
     write_tfrecord_masked_thumbnail(run_parameters)
 
+def wsi_2_patches_dir(run_parameters):
+    from digipath_toolkit import image_file_to_patches_directory
+    image_file_to_patches_directory(run_parameters)
+
+def write_mask_preview(run_parameters):
+    from digipath_toolkit import write_mask_preview_set
+    write_mask_preview_set(run_parameters)
+
 SELECT = {"image_2_tfrecord": image_2_tfrecord,
-          "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb}
+          "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb,
+          'wsi_2_patches_dir': wsi_2_patches_dir,
+          'wrte_mask_preview_set': write_mask_preview}
 
 def main():
     import sys
