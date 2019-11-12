@@ -2,8 +2,9 @@
     module for converting OpenSlide compatable image files to TFRecord files 
     and viewing the TFRecord as a thumbnail image
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+# from __future__ import absolute_import, division, print_function, unicode_literals
 import tensorflow as tf
+from tensorflow import io as tf_io
 import os
 from tempfile import TemporaryDirectory
 import argparse
@@ -489,7 +490,7 @@ def svs_file_to_patches_tfrecord(svs_file_name, output_dir, patch_size, drop_thr
     seq_number = 0
     # open a temporary directory and a TFRecordWriter object
     with TemporaryDirectory() as temp_dir:
-        with tf.io.TFRecordWriter(tfrecord_file_name) as writer:
+        with tf_io.TFRecordWriter(tfrecord_file_name) as writer:
             # iterate through the rows and columns of patches
             for row in range(full_scale_rows_arrays.shape[0]):
                 for col in range(full_scale_cols_arrays.shape[0]):

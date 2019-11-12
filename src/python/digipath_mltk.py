@@ -15,8 +15,8 @@ def tfrecord_2_masked_thumb(run_parameters):
     write_tfrecord_masked_thumbnail(run_parameters)
 
 def wsi_2_patches_dir(run_parameters):
-    from digipath_toolkit import image_file_to_patches_directory
-    image_file_to_patches_directory(run_parameters)
+    from digipath_toolkit import image_file_to_patches_directory_for_image_level
+    image_file_to_patches_directory_for_image_level(run_parameters)
 
 def write_mask_preview(run_parameters):
     from digipath_toolkit import write_mask_preview_set
