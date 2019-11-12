@@ -482,7 +482,7 @@ def write_mask_preview_set(run_parameters):
 """
 
 def image_file_to_patches_directory_for_image_level(run_parameters):
-    """ Usage: number_images_found = image_file_to_patches_directory(run_parameters)
+    """ Usage: number_images_found = image_file_to_patches_directory_for_image_level(run_parameters)
 
     Args (run_parameters):  python dict.keys()
                                 wsi_filename:           file name (with valid path)
