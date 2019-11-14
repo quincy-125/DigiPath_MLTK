@@ -43,7 +43,7 @@ make test_wsi_2_patches_dir
 ```
 `77 images found` <br>
 
-## still working - depreciated methods (refactoring):
+## still working - using unrefactored methods:
 ****
 Test that the .svs file in ../data/images/ is converted to a TFRecord:
 ```
