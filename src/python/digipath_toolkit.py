@@ -20,8 +20,9 @@ from PIL import TiffImagePlugin as tip
 import openslide
 
 """
-            Utility: 
+                            parser utility: 
 """
+
 def get_run_directory_and_run_file(args):
     """ Parse the input arguments to get the run_directory and run_file
 
@@ -61,6 +62,9 @@ def get_run_parameters(run_directory, run_file):
 
     return run_parameters
 
+"""
+                            notebook & development convenience
+"""
 
 def get_file_size_ordered_dict(data_dir, file_type_list):
     """ Usage:  file_size_ordered_dict = get_file_size_ordered_dict
@@ -147,8 +151,9 @@ def lineprint_level_sizes_dict(image_file_name):
 
 
 """
-            functions needed by most methods
+                            patch wrangling functions
 """
+
 def dict_to_patch_name(patch_image_name_dict):
     """ Usage: patch_name = dict_to_patch_name(patch_image_name_dict)
         convert the dictionary into a file name string
@@ -359,6 +364,9 @@ def get_patch_location_array_for_image_level(run_parameters):
 
     return patch_location_array
 
+"""
+                            visualization | examination
+"""
 
 def get_patch_locations_preview_imagefor_image_level(run_parameters):
     """ Usage:
@@ -423,10 +431,11 @@ def get_patch_locations_preview_imagefor_image_level(run_parameters):
 
     #                   draw the rectangles on the thumb_preview image
     for r, c in patch_location_array[:]:
-        #               upper left corner = scaled column & row
+        #               upper left corner = scaled column & row location of patch on thumbnail image
         ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
         #               lower right corner = upper left corner + scaled patch size
         lrc = (ulc[0] + scaled_patch_width, ulc[1] + scaled_patch_height)
+        
         #               draw the rectangle from the upper left corner to the lower right corner
         thumb_draw.rectangle((ulc, lrc), outline=border_color, fill=None)
 
@@ -479,7 +488,7 @@ def write_mask_preview_set(run_parameters):
                                                        location_array_filename))
 
 """
-            Use Case implementations
+                            image generation
 """
 
 class PatchImageGenerator():
@@ -582,6 +591,7 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
 
     # get the patch-image generator object
     patch_generator_obj = PatchImageGenerator(run_parameters)
+    patch_number = -2
     while True:
         # iterate the patch_generator_obj untill empty
         try:
@@ -592,7 +602,8 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
             patch_full_name = os.path.join(output_dir, patch_name)
             # write the file
             patch_dict['patch_image'].convert('RGB').save(patch_full_name)
+            patch_number = patch_dict['patch_number']
 
         except StopIteration:
-            print('%i images written' % (patch_dict['patch_number'] + 2))
+            print('%i images written' % (patch_number + 2))
             break
