@@ -251,7 +251,7 @@ def get_fence_array(patch_length, overall_length):
     return fence_array
 
 
-def get_sample_selection_mask(small_im, patch_select_method):
+def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None):
     """ Usage: mask_im = get_sample_selection_mask(small_im, patch_select_method)
 
     Args:
@@ -262,11 +262,15 @@ def get_sample_selection_mask(small_im, patch_select_method):
         mask_im:                numpy boolean matrix size of small_im
 
     """
+    if not run_parameters is None and 'rgb2lab_threshold' in run_parameters:
+        rgb2lab_threshold = run_parameters['rgb2lab_threshold']
+    else:
+        rgb2lab_threshold = 80
     #                   initialize the return value
     mask_im = None
 
     if patch_select_method == 'threshold_rgb2lab':
-        thresh = 80
+        thresh = rgb2lab_threshold
         np_img = np.array(small_im.convert('RGB'))
         np_img = rgb2lab(np_img)
         np_img = np_img[:, :, 0]
@@ -605,5 +609,5 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
             patch_number = patch_dict['patch_number']
 
         except StopIteration:
-            print('%i images written' % (patch_number + 2))
+            print('%i images written' % (patch_number + 1))
             break
