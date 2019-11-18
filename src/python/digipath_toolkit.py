@@ -605,5 +605,5 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
             patch_number = patch_dict['patch_number']
 
         except StopIteration:
-            print('%i images written' % (patch_number + 2))
+            print('%i images written' % (patch_number + 1))
             break
