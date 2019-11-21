@@ -2,14 +2,25 @@ SCRIPT = ../src/python/digipath_mltk.py
 RUN_DIR = ../../run_dir/
 RUN_FILES = ../data/run_files
 RESULTS_DIR = $(RUN_DIR)/results
+PYTHON_NAME = python3
 
 MKDIR_P = mkdir -p
+
+
+# # # # # # #
+# Phony targets
+# # # # # # #
 
 env_setup:	create_run_dir copy_run_files
 
 unit_test:	unit_test_filename unit_test_fences unit_test_run_parameters unit_test_sample_select
 
-unit_test_py3:	unit_test_3_filename unit_test_3_fences unit_test_3_run_parameters unit_test_3_sample_select
+integration_test: test_im_2_tfr test_tfr_2_mthumb test_wsi_2_patches_dir test_write_mask_preview
+
+
+# # # # # # #
+# Test setup
+# # # # # # #
 
 create_run_dir:
 	$(MKDIR_P) $(RESULTS_DIR)
@@ -17,56 +28,39 @@ create_run_dir:
 copy_run_files:
 	cp $(RUN_FILES)/*.yml $(RUN_DIR)
 
+
+
+# # # # # # #
+# Integration tests
+# # # # # # #
+
 test_im_2_tfr:
-	python3 $(SCRIPT) -run_directory $(RUN_DIR) -run_file image_files_to_tfrecord.yml
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file image_files_to_tfrecord.yml
 
 test_tfr_2_mthumb:
-	python3 $(SCRIPT) -run_directory $(RUN_DIR) -run_file tfrecord_to_masked_thumb.yml
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file tfrecord_to_masked_thumb.yml
 
 test_wsi_2_patches_dir:
-	python3 $(SCRIPT) -run_directory $(RUN_DIR) -run_file wsi_file_to_patches_dir.yml
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file wsi_file_to_patches_dir.yml
 
 test_write_mask_preview:
-	python3 $(SCRIPT) -run_directory $(RUN_DIR) -run_file write_mask_previews.yml
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file write_mask_previews.yml
 
-test_im_2_tfr_python2:
-	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file image_files_to_tfrecord.yml
 
-test_tfr_2_mthumb_python2:
-	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file tfrecord_to_masked_thumb.yml
-
-test_wsi_2_patches_dir_python2:
-	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file wsi_file_to_patches_dir.yml
-
-test_write_mask_preview_python2:
-	python $(SCRIPT) -run_directory $(RUN_DIR) -run_file write_mask_previews.yml
 
 # # # # # # # 
 # Uint tests
 # # # # # # #
 
 unit_test_filename:
-	python unittest/test_file_name_encoding.py
+	$(PYTHON_NAME) unittest/test_file_name_encoding.py
 
 unit_test_fences:
-	python unittest/test_get_fence_array.py
+	$(PYTHON_NAME) unittest/test_get_fence_array.py
  
 unit_test_run_parameters:
-	python unittest/test_get_run_parameters.py
+	$(PYTHON_NAME) unittest/test_get_run_parameters.py
 
 unit_test_sample_select:
-	python unittest/test_get_sample_selection_mask.py
-
-
-unit_test_3_filename:
-	python3 unittest/test_file_name_encoding.py
-
-unit_test_3_fences:
-	python3 unittest/test_get_fence_array.py
- 
-unit_test_3_run_parameters:
-	python3 unittest/test_get_run_parameters.py
-
-unit_test_3_sample_select:
-	python3 unittest/test_get_sample_selection_mask.py
+	$(PYTHON_NAME) unittest/test_get_sample_selection_mask.py
 
