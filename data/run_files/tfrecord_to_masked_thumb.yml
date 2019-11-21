@@ -1,10 +1,27 @@
-# possible methods: tfrecord_2_masked_thumb
-method:            tfrecord_2_masked_thumb
+#                     Parameter set for make target: test_tfr_2_mthumb or test_tfr_2_mthumb_python2
 
-output_dir:         ../../run_dir/results
+# method:             tfrecord_2_masked_thumb
+method:               tfrecord_2_masked_thumb
 
-wsi_filename:      ../data/images/CMU-1-Small-Region.svs
-tfrecord_filename: ../../run_dir/results/CMU-1-Small-Region.tfrecords
+# tfrecord_file_name: tfrecord filename created from the wsi_filename
+tfrecord_file_name:   ../data/tfrecords/CMU-1-Small-Region.tfrecords
 
-border_color:      turquoise
+# wsi_filename:       file name (with valid path)
+wsi_filename:         ../data/images/CMU-1-Small-Region.svs
 
+# output_dir:         writeable directory for the tfrecord
+output_dir:           ../../run_dir/results
+
+# thumbnail_divisor:  wsi_image size divisor for image_level
+thumbnail_divisor:    10
+
+
+#                       (Optional parameters)
+
+# border_color:         red, blue, green
+border_color:           blue
+
+# image_level:          defaults to 0
+image_level:            0
+
+# output_file_name:     defaults to output_dir + tfrecord_file_name(base) + .jpg
