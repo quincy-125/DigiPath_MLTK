@@ -1,10 +1,15 @@
 # Test using Makefile.
 Clone repository, cd to (test) directory. <br>
-_Note: there are two make targets for each test, python3 or python_ <br>
-View in test directory:
+Change to the _test_ directory 
+```
+cd DigiPath_MLTK/test
+```
+View the Makefile in test directory:
 ```
 cat Makefile
 ```
+## _Note:_
+If your _python3_ command is _python_ you must edit the _PYTHON_NAME_ variable at the top of the Makefile
 ****
 # Unit Tests:
 ```
@@ -12,7 +17,7 @@ make unit_tests
 ```
 ****
 # Ingegration Tests
-### Run test from _DigiPath_MLTK/test_ with yaml files copied int run_dir and edited if desired:
+
 ## setup command:
 ```
 make env_setup
