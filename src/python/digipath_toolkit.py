@@ -4,6 +4,7 @@ digipath_toolkit.py
 process large slide images using openslide
 """
 import os
+import tempfile
 from collections import OrderedDict
 import argparse
 
@@ -16,6 +17,9 @@ from skimage.color import rgb2lab
 
 from PIL import ImageDraw
 from PIL import TiffImagePlugin as tip
+
+import tensorflow as tf
+from tensorflow import io as tf_io
 
 import openslide
 
@@ -368,131 +372,9 @@ def get_patch_location_array_for_image_level(run_parameters):
 
     return patch_location_array
 
-"""
-                            visualization | examination
-"""
-
-def get_patch_locations_preview_imagefor_image_level(run_parameters):
-    """ Usage:
-    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_imagefor_image_level(run_parameters)
-
-    create viewable images to show patch locations
-
-    Args (run_parameters):  python dict.keys()
-                                wsi_filename:           file name (with valid path)
-                                border_color:           patch-box representation color 'red', 'blue' etc
-                                patch_height:           patch size = (patch_width, patch_height)
-                                patch_width:            patch size = (patch_width, patch_height)
-                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
-                                threshold:              sum of thresholded image minimimum (default = 0)
-                                image_level:            openslide image pyramid level 0,1,2,...
-    Returns:
-        mask_image:             black & white image of the mask
-        thumb_preview:          thumbnail image with patch locations marked
-        patch_location_array:   list of patch locations used [(row, col), (row, col),... ]
-
-    """
-    #                   unpack - name the variables
-    wsi_filename = run_parameters['wsi_filename']
-    patch_select_method = run_parameters['patch_select_method']
-    thumbnail_divisor = run_parameters['thumbnail_divisor']
-    border_color = run_parameters['border_color']
-
-    #                   scale the patch size to the thumbnail image
-    scaled_patch_height = run_parameters['patch_height'] // thumbnail_divisor - 1
-    scaled_patch_width = run_parameters['patch_width'] // thumbnail_divisor - 1
-
-    if 'image_level' in run_parameters:
-        image_level = run_parameters['image_level']
-    else:
-        image_level = 0
-
-    #                     OpenSlide open                      #
-    os_im_obj = openslide.OpenSlide(wsi_filename)
-
-    #                   get the size of the image at this image level
-    obj_level_diminsions = os_im_obj.level_dimensions
-    pixels_width = obj_level_diminsions[image_level][0]
-    pixels_height = obj_level_diminsions[image_level][1]
-
-    #                   get the thumbnail image scaled to the thumbnail divisor
-    thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
-    thumb_preview = os_im_obj.get_thumbnail(thumbnail_size)
-    os_im_obj.close()
-    #                     OpenSlide close                      #
-
-    #                   get the mask image for this patch_select_method
-    mask_image = get_sample_selection_mask(thumb_preview, patch_select_method)
-    #                   convert it from a binary matrix to a viewable image
-    mask_image = tip.Image.fromarray(np.uint8(mask_image * 255), 'L')
-
-    #                   rectangle-drawing object for the thumbnail preview image
-    thumb_draw = ImageDraw.Draw(thumb_preview)
-
-    #                   thumbnail-scaled patch locations to draw rectangles
-    patch_location_array = get_patch_location_array_for_image_level(run_parameters)
-
-    #                   draw the rectangles on the thumb_preview image
-    for r, c in patch_location_array[:]:
-        #               upper left corner = scaled column & row location of patch on thumbnail image
-        ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
-        #               lower right corner = upper left corner + scaled patch size
-        lrc = (ulc[0] + scaled_patch_width, ulc[1] + scaled_patch_height)
-        
-        #               draw the rectangle from the upper left corner to the lower right corner
-        thumb_draw.rectangle((ulc, lrc), outline=border_color, fill=None)
-
-    return mask_image, thumb_preview, patch_location_array
-
-
-def write_mask_preview_set(run_parameters):
-    """
-    Args (run_parameters):  python dict.keys()
-                                wsi_filename:           file name (with valid path)
-                                output_dir:             where the three files will be written
-                                border_color:           patch-box representation color 'red', 'blue' etc
-                                patch_height:           patch size = (patch_width, patch_height)
-                                patch_width:            patch size = (patch_width, patch_height)
-                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
-    Returns:
-        None:               Writes three files:
-                                wsi_basename_marked_thumb
-                                wsi_basename_mask
-                                wsi_basename_patch_locations
-    """
-    output_dir = run_parameters['output_dir']
-    wsi_filename = run_parameters['wsi_filename']
-    _, wsi_file_base = os.path.split(wsi_filename)
-    wsi_file_base, _ = os.path.splitext(wsi_file_base)
-
-    #               get the two images and the location array
-    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_imagefor_image_level(run_parameters)
-
-    #               name and write the thumb_preview image
-    thumb_preview_filename = os.path.join(output_dir, wsi_file_base + 'marked_thumb.jpg')
-    with open(thumb_preview_filename, 'w') as fh:
-        thumb_preview.save(fh)
-
-    #               name and write the mask_preview image
-    mask_preview_filename = os.path.join(output_dir, wsi_file_base + 'mask.jpg')
-    with open(mask_preview_filename, 'w') as fh:
-        mask_image.save(fh)
-
-    #               name, build and write a dataframe for the upper left corners list
-    location_array_filename = os.path.join(output_dir, wsi_file_base + 'patch_locations.tsv')
-    patchlocation_df = pd.DataFrame(patch_location_array, columns=['row', 'col'])
-    patchlocation_df.index.name = '#'
-    patchlocation_df.to_csv(location_array_filename, sep='\t')
-
-    #               print the output files location
-    print('mask preview set saved:\n\t%s\n\t%s\n\t%s'%(thumb_preview_filename,
-                                                       mask_preview_filename,
-                                                       location_array_filename))
 
 """
-                            image generation
+                            patch image generator
 """
 
 class PatchImageGenerator():
@@ -510,6 +392,7 @@ class PatchImageGenerator():
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
                                 patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              minimimum sum of thresholded image (default = 0)
+                                image_level:            openslide pyramid images level
     yields:
         patch_dict:             (with these keys)
                                 patch_image:            PIL image of patch size
@@ -549,6 +432,192 @@ class PatchImageGenerator():
         else:
             raise StopIteration()
 
+""" Use Case 1 """
+
+def _bytes_feature(value):
+    """Returns a bytes_list from a string / byte."""
+    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+
+def _float_feature(value):
+    """Returns a float_list from a float / double."""
+    return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
+
+def _int64_feature(value):
+    """Returns an int64_list from a bool / enum / int / uint."""
+    return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+
+
+def tf_imp_dict(image_string, label, image_name, class_label='class_label'):
+    """ tf_image_patch_dict = tf_imp_dict(image_string, label, image_name='patch')
+        Create a dictionary of jpg image features
+
+    Args:
+        image_string:  bytes(PIL_image)
+        label:         sequence number     (this is not the label you are looking for)
+        image_name:    bytes(image_name)   (this is the label)
+
+    Returns:
+        one_tf_train_example: tf.train.Example
+
+    """
+    image_shape = tf.image.decode_jpeg(image_string).shape
+    feature = {'height': _int64_feature(image_shape[0]),
+               'width': _int64_feature(image_shape[1]),
+               'depth': _int64_feature(image_shape[2]),
+               'label': _int64_feature(label),
+               'class_label': _bytes_feature(class_label),
+               'image_name': _bytes_feature(image_name),
+               'image_raw': _bytes_feature(image_string)}
+
+    return tf.train.Example(features=tf.train.Features(feature=feature))
+
+
+def _parse_tf_imp_dict(example_proto):
+    """ tf_image_patch_dict = _parse_tf_imp_dict(example_proto)
+        readback dict for tf_imp_dict() (.tfrecords file decoder)
+
+    Args:
+        example_proto:
+
+    Returns:
+        iterable_tfrecord:   try iterable_tfrecord.__iter__()
+    """
+    image_feature_description = {
+        'height': tf.io.FixedLenFeature([], tf.int64),
+        'width': tf.io.FixedLenFeature([], tf.int64),
+        'depth': tf.io.FixedLenFeature([], tf.int64),
+        'label': tf.io.FixedLenFeature([], tf.int64),
+        'class_label': tf.io.FixedLenFeature([], tf.string),
+        'image_name': tf.io.FixedLenFeature([], tf.string),
+        'image_raw': tf.io.FixedLenFeature([], tf.string)}
+
+    return tf.io.parse_single_example(example_proto, image_feature_description)
+
+
+def get_iterable_tfrecord(tfr_name):
+    """ usage:
+    iterable_tfrecord = get_iterable_tfrecord(tfr_name)
+
+    Args:
+        tfr_name:   tensorflow data TFRecord file
+
+    Returns:
+        iterable_tfrecord:  an iterable TFRecordDataset mapped to _parse_tf_imp_dict
+    """
+    return tf.data.TFRecordDataset(tfr_name).map(_parse_tf_imp_dict)
+
+
+def wsi_file_to_patches_tfrecord(run_parameters):
+    """ Usage: tfrecord_file_name = wsi_file_to_patches_tfrecord(run_parameters)
+    Args:
+        run_parameters:         with keys:
+                                    output_dir
+                                    wsi_filename
+                                    class_label
+                                    patch_height
+                                    patch_width
+                                    thumbnail_divisor
+                                    patch_select_method
+                                    threshold
+                                    image_level
+
+                                (optional)
+                                    file_ext
+    Returns:
+        None:                    prints number of images and output file name if successful
+
+    """
+    _, file_name_base = os.path.split(run_parameters['wsi_filename'])
+    file_name_base, _ = os.path.splitext(file_name_base)
+    class_label = run_parameters['class_label']
+    h = run_parameters['patch_height']
+    w = run_parameters['patch_width']
+    class_label = run_parameters['class_label']
+    output_dir = run_parameters['output_dir']
+    if 'file_ext' in run_parameters:
+        file_ext = run_parameters['file_ext']
+    else:
+        file_ext = ''
+
+    if os.path.isdir(output_dir) == False:
+        os.makedirs(output_dir)
+        print('created new dir:', output_dir)
+
+    tfrecord_file_name = file_name_base + '.tfrecords'
+    tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
+
+    patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
+
+    patch_generator = PatchImageGenerator(run_parameters)
+
+    with tf_io.TFRecordWriter(tfrecord_file_name) as writer:
+        seq_number = 0
+        while True:
+            try:
+                patch_dict = patch_generator.next_patch()
+                x = patch_dict['image_level_x']
+                y = patch_dict['image_level_y']
+                patch_image_name_dict['location_x'] = x
+                patch_image_name_dict['location_y'] = y
+                patch_name = dict_to_patch_name(patch_image_name_dict)
+
+                image_string = patch_dict['patch_image'].convert('RGB')
+
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                try:
+                    image_string.save(tmp.name)
+                    image_string = open(tmp.name, 'rb').read()
+
+                except:
+                    print('Image write-read exception with patch # %i, named:\n%s' % (seq_number, patch_name))
+                    pass
+
+                finally:
+                    os.unlink(tmp.name)
+                    tmp.close()
+
+                tf_example_obj = tf_imp_dict(image_string,
+                                             label=seq_number,
+                                             image_name=bytes(patch_name, 'utf8'),
+                                             class_label=bytes(class_label, 'utf8'))
+
+                writer.write(tf_example_obj.SerializeToString())
+                seq_number += 1
+
+            except StopIteration:
+                print('%5i images written to %s' % (seq_number, tfrecord_file_name))
+                break
+
+    return tfrecord_file_name
+
+def run_imfile_to_tfrecord(run_parameters):
+    """ read the run_parameters dictionary & execute function: svs_file_to_patches_tfrecord with those
+
+    Args:
+        run_parameters:     with keys:
+                                wsi_filename:           file name (with valid path)
+                                output_dir:             writeable directory for the tfrecord
+                                class_label:            label for all images
+                                patch_height:           patch size = (patch_width, patch_height)
+                                patch_width:            patch size = (patch_width, patch_height)
+                                file_ext:               default is '.jpg' ('.png') was also tested
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                threshold:              minimimum sum of thresholded image (default = 0)
+
+    Returns:
+        (writes tfrecord file - prints filename if successful)
+
+    """
+    tfrecord_file_name = wsi_file_to_patches_tfrecord(run_parameters)
+    if os.path.isfile(tfrecord_file_name):
+        (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(tfrecord_file_name)
+        if size > 0:
+            print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
+
+""" Use Case 4 """
 
 def image_file_to_patches_directory_for_image_level(run_parameters):
     """ Usage: image_file_to_patches_directory_for_image_level(run_parameters)
@@ -611,3 +680,236 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
         except StopIteration:
             print('%i images written' % (patch_number + 1))
             break
+
+
+"""
+                            visualization | examination
+"""
+def write_tfrecord_marked_thumbnail_image(run_parameters):
+    """ Usage: write_tfrecord_marked_thumbnail_image(run_parameters)
+    Args:
+        run_parameters:         (python dict with these keys)
+                                tfrecord_file_name:     tfrecord filename created from the wsi_filename
+                                wsi_filename:           file name (with valid path)
+                                output_dir:             writeable directory for the tfrecord
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                border_color:           red, blue, green
+
+                                (Optional)
+                                image_level:            defaults to 0
+                                output_file_name:       defaults to output_dir + wsi_filename (base) + .jpg
+
+    Returns:                    None - writes images to output_dir (possibly many)
+                                (prints number of images written)
+    """
+    output_dir = run_parameters['output_dir']
+    if 'output_file_name' in run_parameters:
+        output_file_name = os.path.join(output_dir, run_parameters['output_file_name'])
+    else:
+        wsi_filename = run_parameters['wsi_filename']
+        _, wsi_file_base = os.path.split(wsi_filename)
+        wsi_file_base, _ = os.path.splitext(wsi_file_base)
+        output_file_name = os.path.join(output_dir, wsi_file_base + '_thumb_preview.jpg')
+    thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
+    thumb_preview.save(output_file_name)
+    print('tfrecord thumnail preview saved to:', output_file_name)
+
+def tf_record_to_marked_thumbnail_image(run_parameters):
+    """ Usage: thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
+
+    Args:
+        run_parameters:         (python dict with these keys)
+                                tfrecord_file_name:     tfrecord filename created from the wsi_filename
+                                wsi_filename:           file name (with valid path)
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+
+                                (Optional)
+                                image_level:            defaults to 0
+                                border_color:           red, blue, green
+
+    Returns:
+        thumb_preview:          PIL image with patch locations marked
+
+    """
+    #                   unpack - name the variables
+    tfrecord_file_name = run_parameters['tfrecord_file_name']
+    wsi_filename = run_parameters['wsi_filename']
+    thumbnail_divisor = run_parameters['thumbnail_divisor']
+    if 'border_color' in run_parameters:
+        border_color = run_parameters['border_color']
+    else:
+        border_color = blue
+
+    if 'image_level' in run_parameters:
+        image_level = run_parameters['image_level']
+    else:
+        image_level = 0
+
+    #                     OpenSlide open                      #
+    os_im_obj = openslide.OpenSlide(wsi_filename)
+
+    #                   get the size of the image at this image level
+    obj_level_diminsions = os_im_obj.level_dimensions
+    pixels_width = obj_level_diminsions[image_level][0]
+    pixels_height = obj_level_diminsions[image_level][1]
+
+    #                   get the thumbnail image scaled to the thumbnail divisor
+    thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
+    thumb_preview = os_im_obj.get_thumbnail(thumbnail_size)
+    os_im_obj.close()
+    #                     OpenSlide close                      #
+
+    #                   rectangle-drawing object for the thumbnail preview image
+    thumb_draw = ImageDraw.Draw(thumb_preview)
+
+    iterable_tfrecord = get_iterable_tfrecord(tfrecord_file_name)
+    scaled_patch_width = None
+    scaled_patch_height = None
+    for dict_one in iterable_tfrecord:
+        scaled_patch_height = dict_one['height'] // thumbnail_divisor - 1
+        scaled_patch_width = dict_one['width'] // thumbnail_divisor - 1
+        break
+
+    iterable_tfrecord = get_iterable_tfrecord(tfrecord_file_name)
+    for patch_dict in iterable_tfrecord:
+        im_name = patch_dict['image_name'].numpy().decode('utf-8')
+        patch_name_dict = patch_name_to_dict(im_name)
+        c = patch_name_dict['location_x']
+        r = patch_name_dict['location_y']
+
+        # define the patch location by upper left corner = (column, row)
+        ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
+
+        #               lower right corner = upper left corner + scaled patch sizes
+        lrc = (ulc[0] + scaled_patch_width, ulc[1] + scaled_patch_height)
+
+        #               draw the rectangle from the upper left corner to the lower right corner
+        thumb_draw.rectangle((ulc, lrc), outline=border_color, fill=None)
+
+    return thumb_preview
+
+
+def get_patch_locations_preview_imagefor_image_level(run_parameters):
+    """ Usage:
+    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_imagefor_image_level(run_parameters)
+
+    create viewable images to show patch locations
+
+    Args (run_parameters):  python dict.keys()
+                                wsi_filename:           file name (with valid path)
+                                patch_height:           patch size = (patch_width, patch_height)
+                                patch_width:            patch size = (patch_width, patch_height)
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                threshold:              sum of thresholded image minimimum (default = 0)
+                                image_level:            openslide image pyramid level 0,1,2,...
+
+                            Optional keys()
+                                border_color:           patch-box representation color red, blue, green, ...
+    Returns:
+        mask_image:             black & white image of the mask
+        thumb_preview:          thumbnail image with patch locations marked
+        patch_location_array:   list of patch locations used [(row, col), (row, col),... ]
+
+    """
+    #                   unpack - name the variables
+    wsi_filename = run_parameters['wsi_filename']
+    patch_select_method = run_parameters['patch_select_method']
+    thumbnail_divisor = run_parameters['thumbnail_divisor']
+
+    if 'border_color' in run_parameters:
+        border_color = run_parameters['border_color']
+    else:
+        border_color = blue
+
+    #                   scale the patch size to the thumbnail image
+    scaled_patch_height = run_parameters['patch_height'] // thumbnail_divisor - 1
+    scaled_patch_width = run_parameters['patch_width'] // thumbnail_divisor - 1
+
+    if 'image_level' in run_parameters:
+        image_level = run_parameters['image_level']
+    else:
+        image_level = 0
+
+    #                     OpenSlide open                      #
+    os_im_obj = openslide.OpenSlide(wsi_filename)
+
+    #                   get the size of the image at this image level
+    obj_level_diminsions = os_im_obj.level_dimensions
+    pixels_width = obj_level_diminsions[image_level][0]
+    pixels_height = obj_level_diminsions[image_level][1]
+
+    #                   get the thumbnail image scaled to the thumbnail divisor
+    thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
+    thumb_preview = os_im_obj.get_thumbnail(thumbnail_size)
+    os_im_obj.close()
+    #                     OpenSlide close                      #
+
+    #                   get the mask image for this patch_select_method
+    mask_image = get_sample_selection_mask(thumb_preview, patch_select_method)
+    #                   convert it from a binary matrix to a viewable image
+    mask_image = tip.Image.fromarray(np.uint8(mask_image * 255), 'L')
+
+    #                   rectangle-drawing object for the thumbnail preview image
+    thumb_draw = ImageDraw.Draw(thumb_preview)
+
+    #                   thumbnail-scaled patch locations to draw rectangles
+    patch_location_array = get_patch_location_array_for_image_level(run_parameters)
+
+    #                   draw the rectangles on the thumb_preview image
+    for r, c in patch_location_array[:]:
+        #               upper left corner = scaled column & row location of patch on thumbnail image
+        ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
+        #               lower right corner = upper left corner + scaled patch size
+        lrc = (ulc[0] + scaled_patch_width, ulc[1] + scaled_patch_height)
+
+        #               draw the rectangle from the upper left corner to the lower right corner
+        thumb_draw.rectangle((ulc, lrc), outline=border_color, fill=None)
+
+    return mask_image, thumb_preview, patch_location_array
+
+
+def write_mask_preview_set(run_parameters):
+    """
+    Args (run_parameters):  python dict.keys()
+                                wsi_filename:           file name (with valid path)
+                                output_dir:             where the three files will be written
+                                border_color:           patch-box representation color 'red', 'blue' etc
+                                patch_height:           patch size = (patch_width, patch_height)
+                                patch_width:            patch size = (patch_width, patch_height)
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+    Returns:
+        None:               Writes three files:
+                                wsi_basename_marked_thumb
+                                wsi_basename_mask
+                                wsi_basename_patch_locations
+    """
+    output_dir = run_parameters['output_dir']
+    wsi_filename = run_parameters['wsi_filename']
+    _, wsi_file_base = os.path.split(wsi_filename)
+    wsi_file_base, _ = os.path.splitext(wsi_file_base)
+
+    #               get the two images and the location array
+    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_imagefor_image_level(run_parameters)
+
+    #               name and write the thumb_preview image
+    thumb_preview_filename = os.path.join(output_dir, wsi_file_base + 'marked_thumb.jpg')
+    with open(thumb_preview_filename, 'w') as fh:
+        thumb_preview.save(fh)
+
+    #               name and write the mask_preview image
+    mask_preview_filename = os.path.join(output_dir, wsi_file_base + 'mask.jpg')
+    with open(mask_preview_filename, 'w') as fh:
+        mask_image.save(fh)
+
+    #               name, build and write a dataframe for the upper left corners list
+    location_array_filename = os.path.join(output_dir, wsi_file_base + 'patch_locations.tsv')
+    patchlocation_df = pd.DataFrame(patch_location_array, columns=['row', 'col'])
+    patchlocation_df.index.name = '#'
+    patchlocation_df.to_csv(location_array_filename, sep='\t')
+
+    #               print the output files location
+    print('mask preview set saved:\n\t%s\n\t%s\n\t%s' % (thumb_preview_filename,
+                                                         mask_preview_filename,
+                                                         location_array_filename))
