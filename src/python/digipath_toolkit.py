@@ -510,7 +510,7 @@ def get_iterable_tfrecord(tfr_name):
 
 
 def wsi_file_to_patches_tfrecord(run_parameters):
-    """ Usage: wsi_file_to_patches_tfrecord(run_parameters)
+    """ Usage: tfrecord_file_name = wsi_file_to_patches_tfrecord(run_parameters)
     Args:
         run_parameters:         with keys:
                                     output_dir
@@ -590,6 +590,32 @@ def wsi_file_to_patches_tfrecord(run_parameters):
                 print('%5i images written to %s' % (seq_number, tfrecord_file_name))
                 break
 
+    return tfrecord_file_name
+
+def run_imfile_to_tfrecord(run_parameters):
+    """ read the run_parameters dictionary & execute function: svs_file_to_patches_tfrecord with those
+
+    Args:
+        run_parameters:     with keys:
+                                wsi_filename:           file name (with valid path)
+                                output_dir:             writeable directory for the tfrecord
+                                class_label:            label for all images
+                                patch_height:           patch size = (patch_width, patch_height)
+                                patch_width:            patch size = (patch_width, patch_height)
+                                file_ext:               default is '.jpg' ('.png') was also tested
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                threshold:              minimimum sum of thresholded image (default = 0)
+
+    Returns:
+        (writes tfrecord file - prints filename if successful)
+
+    """
+    tfrecord_file_name = wsi_file_to_patches_tfrecord(run_parameters)
+    if os.path.isfile(tfrecord_file_name):
+        (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(tfrecord_file_name)
+        if size > 0:
+            print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
 
 """ Use Case 4 """
 
@@ -662,8 +688,19 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
 def write_tfrecord_marked_thumbnail_image(run_parameters):
     """ Usage: write_tfrecord_marked_thumbnail_image(run_parameters)
     Args:
-    Returns:
-        None:           writes thumnail image file with tfrecord images
+        run_parameters:         (python dict with these keys)
+                                tfrecord_file_name:     tfrecord filename created from the wsi_filename
+                                wsi_filename:           file name (with valid path)
+                                output_dir:             writeable directory for the tfrecord
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                border_color:           red, blue, green
+
+                                (Optional)
+                                image_level:            defaults to 0
+                                output_file_name:       defaults to output_dir + wsi_filename (base) + .jpg
+
+    Returns:                    None - writes images to output_dir (possibly many)
+                                (prints number of images written)
     """
     output_dir = run_parameters['output_dir']
     if 'output_file_name' in run_parameters:
@@ -679,17 +716,29 @@ def write_tfrecord_marked_thumbnail_image(run_parameters):
 
 def tf_record_to_marked_thumbnail_image(run_parameters):
     """ Usage: thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
+
+    Args:
+        run_parameters:         (python dict with these keys)
+                                tfrecord_file_name:     tfrecord filename created from the wsi_filename
+                                wsi_filename:           file name (with valid path)
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+
+                                (Optional)
+                                image_level:            defaults to 0
+                                border_color:           red, blue, green
+
+    Returns:
+        thumb_preview:          PIL image with patch locations marked
+
     """
     #                   unpack - name the variables
     tfrecord_file_name = run_parameters['tfrecord_file_name']
     wsi_filename = run_parameters['wsi_filename']
-    patch_select_method = run_parameters['patch_select_method']
     thumbnail_divisor = run_parameters['thumbnail_divisor']
-    border_color = run_parameters['border_color']
-
-    #                   scale the patch size to the thumbnail image
-    scaled_patch_height = run_parameters['patch_height'] // thumbnail_divisor - 1
-    scaled_patch_width = run_parameters['patch_width'] // thumbnail_divisor - 1
+    if 'border_color' in run_parameters:
+        border_color = run_parameters['border_color']
+    else:
+        border_color = blue
 
     if 'image_level' in run_parameters:
         image_level = run_parameters['image_level']
@@ -712,6 +761,14 @@ def tf_record_to_marked_thumbnail_image(run_parameters):
 
     #                   rectangle-drawing object for the thumbnail preview image
     thumb_draw = ImageDraw.Draw(thumb_preview)
+
+    iterable_tfrecord = get_iterable_tfrecord(tfrecord_file_name)
+    scaled_patch_width = None
+    scaled_patch_height = None
+    for dict_one in iterable_tfrecord:
+        scaled_patch_height = dict_one['height'] // thumbnail_divisor - 1
+        scaled_patch_width = dict_one['width'] // thumbnail_divisor - 1
+        break
 
     iterable_tfrecord = get_iterable_tfrecord(tfrecord_file_name)
     for patch_dict in iterable_tfrecord:
@@ -740,13 +797,15 @@ def get_patch_locations_preview_imagefor_image_level(run_parameters):
 
     Args (run_parameters):  python dict.keys()
                                 wsi_filename:           file name (with valid path)
-                                border_color:           patch-box representation color 'red', 'blue' etc
                                 patch_height:           patch size = (patch_width, patch_height)
                                 patch_width:            patch size = (patch_width, patch_height)
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
                                 patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              sum of thresholded image minimimum (default = 0)
                                 image_level:            openslide image pyramid level 0,1,2,...
+
+                            Optional keys()
+                                border_color:           patch-box representation color red, blue, green, ...
     Returns:
         mask_image:             black & white image of the mask
         thumb_preview:          thumbnail image with patch locations marked
@@ -757,7 +816,11 @@ def get_patch_locations_preview_imagefor_image_level(run_parameters):
     wsi_filename = run_parameters['wsi_filename']
     patch_select_method = run_parameters['patch_select_method']
     thumbnail_divisor = run_parameters['thumbnail_divisor']
-    border_color = run_parameters['border_color']
+
+    if 'border_color' in run_parameters:
+        border_color = run_parameters['border_color']
+    else:
+        border_color = blue
 
     #                   scale the patch size to the thumbnail image
     scaled_patch_height = run_parameters['patch_height'] // thumbnail_divisor - 1
