@@ -158,6 +158,35 @@ def lineprint_level_sizes_dict(image_file_name):
                             patch wrangling functions
 """
 
+
+def patch_name_parts_limit(name_str, space_replacer=None):
+    """ Usage:  par_name = patch_name_parts_limit(name_str, <space_replacer>)
+                clean up name_str such that it may be decoded with patch_name_to_dict and serve as a valid file name
+    Args:
+        name_str:       string representation for case_id or class_label or file_extension
+        space_replacer: python str to replace spaces -
+
+    Returns:
+        part_name:      name_str string with spaces removed, reserved characters removed
+                        and underscores replaced with hyphens
+    """
+    # remove spaces: substitute if valid space replacer is input
+    if space_replacer is not None and isinstance(space_replacer, str):
+        name_str = name_str.replace(' ', space_replacer)
+
+    # no spaces!
+    name_str = name_str.replace(' ', '')
+
+    # remove reserved characters
+    reserved_chars = ['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>']
+    part_name = ''.join(c for c in name_str if not c in reserved_chars)
+
+    # replace underscore with hyphen to allow decoding of x and y location
+    part_name = part_name.replace('_', '-')
+
+    return part_name
+
+
 def dict_to_patch_name(patch_image_name_dict):
     """ Usage: patch_name = dict_to_patch_name(patch_image_name_dict)
         convert the dictionary into a file name string
@@ -172,14 +201,15 @@ def dict_to_patch_name(patch_image_name_dict):
     Returns:
         patch_name:     file name (without directory path)
     """
+
     if len(patch_image_name_dict['file_ext']) > 1 and patch_image_name_dict['file_ext'][0] != '.':
         patch_image_name_dict['file_ext'] = '.' + patch_image_name_dict['file_ext']
-        
-    patch_name = patch_image_name_dict['case_id']
+
+    patch_name = patch_name_parts_limit(patch_image_name_dict['case_id'])
     patch_name += '_%i'%patch_image_name_dict['location_x']
     patch_name += '_%i'%patch_image_name_dict['location_y'] 
-    patch_name += '_%s'%patch_image_name_dict['class_label']
-    patch_name += '%s'%patch_image_name_dict['file_ext']
+    patch_name += '_%s'%patch_name_parts_limit(patch_image_name_dict['class_label'])
+    patch_name += '%s'%patch_name_parts_limit(patch_image_name_dict['file_ext'])
     
     return patch_name
 
@@ -203,7 +233,7 @@ def patch_name_to_dict(patch_file_name):
         file_ext = file_ext[1:]
 
     name_field_list = name_part.split('_')
-    
+
     patch_image_name_dict = {'case_id': name_field_list[0], 
                              'location_x': int(name_field_list[1]), 
                              'location_y': int(name_field_list[2]), 
