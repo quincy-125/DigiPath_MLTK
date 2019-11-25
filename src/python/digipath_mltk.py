@@ -1,5 +1,5 @@
 """
-main function for ./openslied_2_tfrecord.py
+main function for ./digipath_toolkit.py
 
 Usage:
 python3 digipath_mltk.py -run_directory ./ -run_file run_parameters_file.yml
@@ -7,12 +7,12 @@ python3 digipath_mltk.py -run_directory ./ -run_file run_parameters_file.yml
 """
 
 def image_2_tfrecord(run_parameters):
-    from openslide_2_tfrecord import run_imfile_to_tfrecord
+    from digipath_toolkit import run_imfile_to_tfrecord
     run_imfile_to_tfrecord(run_parameters)
 
 def tfrecord_2_masked_thumb(run_parameters):
-    from openslide_2_tfrecord import write_tfrecord_masked_thumbnail
-    write_tfrecord_masked_thumbnail(run_parameters)
+    from digipath_toolkit import write_tfrecord_marked_thumbnail_image
+    write_tfrecord_marked_thumbnail_image(run_parameters)
 
 def wsi_2_patches_dir(run_parameters):
     from digipath_toolkit import image_file_to_patches_directory_for_image_level
@@ -29,7 +29,7 @@ SELECT = {"image_2_tfrecord": image_2_tfrecord,
 
 def main():
     import sys
-    from openslide_2_tfrecord import get_run_directory_and_run_file, get_run_parameters
+    from digipath_toolkit import get_run_directory_and_run_file, get_run_parameters
     run_directory, run_file = get_run_directory_and_run_file(sys.argv[1:])
     run_parameters = get_run_parameters(run_directory, run_file)
 

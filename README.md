@@ -20,10 +20,12 @@ python ../DigiPath_MLTK/src/python/digipath_mltk.py -run_directory . -run_file i
 ```
 
 ## The "method" parameter in the yaml files:
-Two methods are currently implemented in DigiPath_MLTK/src/python/digipath_mltk.py. <br>
+Four methods are currently implemented in DigiPath_MLTK/src/python/digipath_mltk.py. <br>
 ```
 SELECT = {"image_2_tfrecord": image_2_tfrecord,
-          "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb}
+          "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb,
+          "wsi_2_patches_dir": wsi_2_patches_dir,
+          "write_mask_preview_set": write_mask_preview}
 ```
 Setting the "method" parameter sends the run parameters to the execution function in <br>
   _DigiPath_MLTK/src/python/openslide_2_tfrecord.py_ <br>

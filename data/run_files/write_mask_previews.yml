@@ -1,19 +1,38 @@
+#                       Parameter set for make target: test_write_mask_preview or test_write_mask_preview_python2
 
+# method:               wrte_mask_preview_set
 method:                 wrte_mask_preview_set
 
+# wsi_filename:         file name (with valid path)
 wsi_filename:           ../data/images/CMU-1-Small-Region.svs
+
+# output_dir:           ../../run_dir
 output_dir:             ../../run_dir
 
-thumbnail_divisor:      5
+# thumbnail_divisor:    10
+thumbnail_divisor:      10
 
+# patch_width:            224
 patch_width:            224
+
+# patch_height:           224
 patch_height:           224
 
 #                       threshold_otsu, threshold_rgb2lab
 patch_select_method:    threshold_rgb2lab
+
+
+
+#                       (Optional parameters)
+
+# rgb2lab_threshold:    default is 80
 rgb2lab_threshold:      80
+
+# threshold:            default is  0
 threshold:              0
+
+# image_level:          default is 0
 image_level:            0
 
 #                       red, blue, green, yellow, black,...
-border_color:           red
+border_color:           blue
