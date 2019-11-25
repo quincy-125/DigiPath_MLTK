@@ -7,6 +7,7 @@ import os
 import tempfile
 from collections import OrderedDict
 import argparse
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -155,37 +156,8 @@ def lineprint_level_sizes_dict(image_file_name):
 
 
 """
-                            patch wrangling functions
+                            patch wrangling
 """
-
-
-def patch_name_parts_limit(name_str, space_replacer=None):
-    """ Usage:  par_name = patch_name_parts_limit(name_str, <space_replacer>)
-                clean up name_str such that it may be decoded with patch_name_to_dict and serve as a valid file name
-    Args:
-        name_str:       string representation for case_id or class_label or file_extension
-        space_replacer: python str to replace spaces -
-
-    Returns:
-        part_name:      name_str string with spaces removed, reserved characters removed
-                        and underscores replaced with hyphens
-    """
-    # remove spaces: substitute if valid space replacer is input
-    if space_replacer is not None and isinstance(space_replacer, str):
-        name_str = name_str.replace(' ', space_replacer)
-
-    # no spaces!
-    name_str = name_str.replace(' ', '')
-
-    # remove reserved characters
-    reserved_chars = ['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>']
-    part_name = ''.join(c for c in name_str if not c in reserved_chars)
-
-    # replace underscore with hyphen to allow decoding of x and y location
-    part_name = part_name.replace('_', '-')
-
-    return part_name
-
 
 def dict_to_patch_name(patch_image_name_dict):
     """ Usage: patch_name = dict_to_patch_name(patch_image_name_dict)
@@ -205,11 +177,11 @@ def dict_to_patch_name(patch_image_name_dict):
     if len(patch_image_name_dict['file_ext']) > 1 and patch_image_name_dict['file_ext'][0] != '.':
         patch_image_name_dict['file_ext'] = '.' + patch_image_name_dict['file_ext']
 
-    patch_name = patch_name_parts_limit(patch_image_name_dict['case_id'])
+    patch_name = patch_image_name_dict['case_id']
     patch_name += '_%i'%patch_image_name_dict['location_x']
     patch_name += '_%i'%patch_image_name_dict['location_y'] 
-    patch_name += '_%s'%patch_name_parts_limit(patch_image_name_dict['class_label'])
-    patch_name += '%s'%patch_name_parts_limit(patch_image_name_dict['file_ext'])
+    patch_name += '_%s'%patch_image_name_dict['class_label']
+    patch_name += '%s'%patch_image_name_dict['file_ext']
     
     return patch_name
 
@@ -402,7 +374,6 @@ def get_patch_location_array_for_image_level(run_parameters):
 
     return patch_location_array
 
-
 """
                             patch image generator
 """
@@ -461,6 +432,67 @@ class PatchImageGenerator():
 
         else:
             raise StopIteration()
+
+""" Input conditioning """
+
+
+def patch_name_parts_limit(name_str, space_replacer=None):
+    """ Usage:  par_name = patch_name_parts_limit(name_str, <space_replacer>)
+                clean up name_str such that it may be decoded with
+                patch_name_to_dict and serve as a valid file name
+    Args:
+        name_str:       string representation for case_id or class_label or file_extension
+        space_replacer: python str to replace spaces -
+
+    Returns:
+        part_name:      name_str string with spaces removed, reserved characters removed
+                        and underscores replaced with hyphens
+    """
+    # remove spaces: substitute if valid space replacer is input
+    if space_replacer is not None and isinstance(space_replacer, str):
+        name_str = name_str.replace(' ', space_replacer)
+
+    # no spaces!
+    name_str = name_str.replace(' ', '')
+
+    # remove reserved characters
+    reserved_chars = ['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>']
+    part_name = ''.join(c for c in name_str if not c in reserved_chars)
+
+    # replace underscore with hyphen to allow decoding of x and y location
+    part_name = part_name.replace('_', '-')
+
+    return part_name
+
+
+def patch_name_parts_clean_with_warning(file_name_base, class_label):
+    """ Usage:  name_base_clean, class_label_clean = patch_name_parts_clean_with_warning(name_base, class_label)
+                sanitize case_id, class_label and file_ext so that they may be decoded
+                - warn user that input parameter changed
+    Args:
+        file_name_base:     file name string
+        class_label:        class_id
+
+    Retruns:
+        name_base_clean:    file_name_base with reserved_chars removed
+        class_label_clean:  class_label with reserved_chars removed
+
+    Warnings:               (if names are changed)
+        UserWarning:        Input parameter changed
+
+    """
+    par_change_warning = 'Input parameter changed.\t(for name readback decoding)'
+    warn_format_str = '\n%s\nparameter:\t%s\nchanged to:\t%s\n'
+
+    name_base_clean = patch_name_parts_limit(file_name_base)
+    if name_base_clean != file_name_base:
+        warnings.warn(warn_format_str % (par_change_warning, file_name_base, name_base_clean))
+
+    class_label_clean = patch_name_parts_limit(class_label)
+    if class_label_clean != class_label:
+        warnings.warn(warn_format_str % (par_change_warning, class_label, class_label_clean))
+
+    return name_base_clean, class_label_clean
 
 """ Use Case 1 """
 
@@ -578,6 +610,8 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     tfrecord_file_name = file_name_base + '.tfrecords'
     tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
 
+    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user that input parameter changed
+    file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
     patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
 
     patch_generator = PatchImageGenerator(run_parameters)
@@ -690,6 +724,10 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
     # prepare name generation dictionary
     _, file_name_base = os.path.split(image_file_name)
     file_name_base, _ = os.path.splitext(file_name_base)
+
+    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user that input parameter changed
+    file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
+
     patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
 
     # get the patch-image generator object
@@ -768,7 +806,7 @@ def tf_record_to_marked_thumbnail_image(run_parameters):
     if 'border_color' in run_parameters:
         border_color = run_parameters['border_color']
     else:
-        border_color = blue
+        border_color = 'blue'
 
     if 'image_level' in run_parameters:
         image_level = run_parameters['image_level']
@@ -850,7 +888,7 @@ def get_patch_locations_preview_imagefor_image_level(run_parameters):
     if 'border_color' in run_parameters:
         border_color = run_parameters['border_color']
     else:
-        border_color = blue
+        border_color = 'blue'
 
     #                   scale the patch size to the thumbnail image
     scaled_patch_height = run_parameters['patch_height'] // thumbnail_divisor - 1
