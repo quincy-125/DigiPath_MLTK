@@ -333,15 +333,15 @@ def get_patch_location_array_for_image_level(run_parameters):
     os_im_obj = openslide.OpenSlide(wsi_filename)
     obj_level_diminsions = os_im_obj.level_dimensions
 
-    #                   get the start, stop locations list for the rows
+    #                   get the start, stop locations list for the rows     -- Scaled to image_level
     pixels_height = obj_level_diminsions[image_level][1]
     rows_fence_array = get_fence_array(patch_length=patch_height, overall_length=pixels_height)
 
-    #                   get the start, stop locations list for the columns
+    #                   get the start, stop locations list for the columns  -- Scaled to image_level
     pixels_width = obj_level_diminsions[image_level][0]
     cols_fence_array = get_fence_array(patch_length=patch_width, overall_length=pixels_width)
 
-    #                   get a thumbnail image for the patch select method
+    #                   get a thumbnail image for the patch select method   -- Scaled to image_level / thumbnail_divisor
     thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
     small_im = os_im_obj.get_thumbnail(thumbnail_size)
     os_im_obj.close()
@@ -350,6 +350,7 @@ def get_patch_location_array_for_image_level(run_parameters):
     #                   get the binary mask as a measure of image region content
     mask_im = get_sample_selection_mask(small_im, patch_select_method)
 
+    #                                       Rescale Fence Arrays to thumbnail image
     #                   iterator for rows:  (top_row, bottom_row, full_scale_row_number)
     it_rows = zip(rows_fence_array[:, 0] // thumbnail_divisor,
                   rows_fence_array[:, 1] // thumbnail_divisor,
@@ -372,6 +373,7 @@ def get_patch_location_array_for_image_level(run_parameters):
                 #       add the full scale row and column of the upper left corner to the list
                 patch_location_array.append((row_n, col_n))
 
+    #                   patch locations at image_level scale   [(row, col), (row, col),...]     -- Scaled to image_level
     return patch_location_array
 
 """
@@ -383,7 +385,11 @@ class PatchImageGenerator():
     General case patch image generator for openslide Whole Slide Image file types
 
     Usage:  patch_image_generator = PatchImageGenerator(run_parameters)
-            patch_dict = patch_image_generator.next_patch()
+            try:
+                patch_dict = patch_image_generator.next_patch()
+            execpt StopIteration:
+                # catch StopIterationError - no action required except pass
+                pass
 
     Args:
         run_parameters:         (with these keys)
@@ -404,33 +410,58 @@ class PatchImageGenerator():
     """
 
     def __init__(self, run_parameters):
+
+        #                       assign inputs, Open the file
         self.os_obj = openslide.OpenSlide(run_parameters['wsi_filename'])
+
+        #                       image_level determines scale, patch width and height are fixed
         self.image_level = run_parameters['image_level']
         self.patch_size = (run_parameters['patch_width'], run_parameters['patch_height'])
+
+        #                       get the scale multiplier
         _multi_ = self.os_obj.level_downsamples[self.image_level]
+
+        #                       image_level_loc_array  = [(row, col), (row, col),...]     -- Scaled to image_level
         self.image_level_loc_array = get_patch_location_array_for_image_level(run_parameters)
+
+        #                       rescale to image full size :
         self.level_0_location_array = [(int(p[0] * _multi_), int(p[1] * _multi_)) for p in self.image_level_loc_array]
+
+        #                       size of the iteration and initialize for +1 opening index of 0
         self._number_of_patches = len(self.image_level_loc_array)
         self._patch_number = -1
 
     def __del__(self):
+        #                       just before exit, Close the file
         self.os_obj.close()
 
     def next_patch(self):
+
+        #                       initialized to -1, opens as 0 ends as number of patches -1 (as zero-indexing should)
         self._patch_number += 1
+
+        #                       ( for every patch )
         if self._patch_number < self._number_of_patches:
+
+            #                   iteration number
             patch_dict = {'patch_number': self._patch_number}
+
+            #                   insert the next image_level scaled x and y into the return dictionary
             patch_dict['image_level_x'] = self.image_level_loc_array[self._patch_number][1]
             patch_dict['image_level_y'] = self.image_level_loc_array[self._patch_number][0]
+
+            #                   insert the full scale location x, y in return dict and the location tuple
             patch_dict['level_0_x'] = self.level_0_location_array[self._patch_number][1]
             patch_dict['level_0_y'] = self.level_0_location_array[self._patch_number][0]
-
             location = (patch_dict['level_0_x'], patch_dict['level_0_y'])
+
+            #                   read the patch_sized image at the loaction and insert it in the return dict
             patch_dict['patch_image'] = self.os_obj.read_region(location, self.image_level, self.patch_size)
 
             return patch_dict
 
         else:
+            #                   This is standard practice for python generators -
             raise StopIteration()
 
 """ Input conditioning """
