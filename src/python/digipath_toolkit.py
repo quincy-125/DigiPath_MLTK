@@ -24,6 +24,7 @@ from tensorflow import io as tf_io
 
 import openslide
 
+MIN_STRIDE_PIXELS = 3
 """
                             parser utility: 
 """
@@ -293,6 +294,152 @@ def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None
     return mask_im
 
 
+def get_offset_array_start_and_end(array_length, array_offset):
+    """ Usage:  array_start, array_end = get_offset_array_start_and_end(array_length, array_offset)
+                single axis boundry in context of offset
+
+    Args:
+        array_length:   image dimension         (positive integer)
+        array_offset:   registration offset     (integer)
+
+    Returns:            (positive integers)
+        array_start:    first index in image diminsion
+        array_end:      last index + 1 in image diminsion
+    """
+    array_start = max(0, array_offset)
+    array_end = min(array_length, np.abs(array_length) + array_offset)
+
+    return array_start, array_end
+
+
+def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
+    """ Usage:   sf_array = get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end)
+                            pairs of bounds for one dimension of a patch array
+                            single axis, strided: first, last patch location array
+
+    Args:               (positive integers)
+        patch_len:      patch length, patch dimension
+        patch_stride:   percent of patch dimension - stride = floor(patch_len * patch_stride)
+        arr_start:      array start index, beginning index using closed zero-based indexing
+        arr_end:        array end index, last index using CLOSED zero-based indexing (0, arr_end]
+
+    Returns:
+        fence_array:    numpy 2 d array like [[p_start, p_end], [p_start, p_end],...]
+
+    """
+    #                   fence stride is the distance between starting points
+    fence_stride = int(np.abs(patch_len * patch_stride)) + 1
+
+    #                   pre-allocate a max number-of-patches by 2 numpy array
+    array_size = 1 + np.abs(arr_end - arr_start) // fence_stride
+    fence_array = np.zeros((array_size, 2)).astype(np.int)
+
+    #                   initialize the first location and a fence_array index
+    p_loc = np.array([arr_start, arr_start + patch_len]).astype(np.int)
+    pair_number = 0
+
+    #                   walk toward the end
+    while p_loc[1] < arr_end:
+        #               add this location pair to the fence array
+        fence_array[pair_number, :] = p_loc
+        pair_number += 1
+
+        #               advance the next pair
+        p_loc[0] = p_loc[0] + fence_stride
+        p_loc[1] = p_loc[0] + patch_len
+
+    #                   cover the short ending case
+    if pair_number < fence_array.shape[0]:
+        if fence_array[pair_number, 1] != arr_end - 1:
+            fence_array[pair_number, :] = (arr_end - patch_len - 1, arr_end - 1)
+
+        fence_array = fence_array[0:pair_number + 1, :]
+
+    return fence_array
+
+
+def get_strided_patches_dict_for_image_level(run_parameters):
+    """ Usage: strided_patches_dict = get_strided_patches_dict_for_image_level(run_parameters)
+    Args:
+
+    Returns:
+
+    """
+    wsi_filename = run_parameters['wsi_filename']
+    thumbnail_divisor = run_parameters['thumbnail_divisor']
+    patch_select_method = run_parameters['patch_select_method']
+    patch_height = run_parameters['patch_height']
+    patch_width = run_parameters['patch_width']
+
+    #                   set defaults for newly added parameters
+    if 'threshold' in run_parameters:
+        threshold = run_parameters['threshold']
+    else:
+        threshold = 0
+
+    if 'image_level' in run_parameters:
+        image_level = run_parameters['image_level']
+    else:
+        image_level = 0
+
+    if 'offset_x' in run_parameters:
+        offset_x = run_parameters['offset_x']
+    else:
+        offset_x = 0
+
+    if 'offset_y' in run_parameters:
+        offset_y = run_parameters['offset_y']
+    else:
+        offset_y = 0
+
+    if 'patch_stride_fraction' in run_parameters:
+        patch_stride = run_parameters['patch_stride_fraction']
+    else:
+        patch_stride = 1.0
+
+    #       assure minimum stride s.t. arrays advance by at least MIN_STRIDE_PIXELS
+    patch_stride = max(patch_stride, (MIN_STRIDE_PIXELS / min(patch_width, patch_height) ) )
+
+    #                     OpenSlide Open                      #
+    os_im_obj = openslide.OpenSlide(wsi_filename)
+
+    #       guard image level
+    image_level = min(image_level, os_im_obj.level_count - 1)
+
+    obj_level_diminsions = os_im_obj.level_dimensions
+    obj_level_downsample = os_im_obj.level_downsamples[image_level]
+
+    #       adjust offset to this scale for location arrays start - end
+    offset_y = int(offset_y / obj_level_downsample)
+    offset_x = int(offset_x / obj_level_downsample)
+
+    #       get the start, stop locations list for the rows     -- Scaled to image_level
+    pixels_height = obj_level_diminsions[image_level][1]
+    row_start, row_end = get_offset_array_start_and_end(array_length=pixels_height, array_offset=offset_y)
+    rows_fence_array = get_strided_fence_array(patch_height, patch_stride, row_start, row_end)
+
+    #       get the start, stop locations list for the columns  -- Scaled to image_level
+    pixels_width = obj_level_diminsions[image_level][0]
+    col_start, col_end = get_offset_array_start_and_end(array_length=pixels_width, array_offset=offset_x)
+    cols_fence_array = get_strided_fence_array(patch_width, patch_stride, col_start, col_end)
+
+    #       get a thumbnail image for the patch select method   -- Scaled to image_level / thumbnail_divisor
+    thumbnail_size = (int(pixels_width // thumbnail_divisor),
+                      int(pixels_height // thumbnail_divisor))
+
+    #       thumb scale on full size image
+    small_im = os_im_obj.get_thumbnail(thumbnail_size)
+    os_im_obj.close()
+    #                     OpenSlide Close                      #
+
+    #       package the return dictionary
+    strided_patches_dict = {'small_im': small_im,
+                            'cols_fence_array': cols_fence_array,
+                            'rows_fence_array': rows_fence_array,
+                            'thumbnail_divisor': thumbnail_divisor}
+
+    return strided_patches_dict
+
 def get_patch_location_array_for_image_level(run_parameters):
     """ Usage: patch_location_array = get_patch_location_array_for_image_level(run_parameters)
         using 'patch_select_method", find all upper left corner locations of patches
@@ -313,42 +460,22 @@ def get_patch_location_array_for_image_level(run_parameters):
     #                   initialize an empty return value
     patch_location_array = []
     #                   name the input variables
-    wsi_filename = run_parameters['wsi_filename']
-    thumbnail_divisor = run_parameters['thumbnail_divisor']
     patch_select_method = run_parameters['patch_select_method']
-    patch_height = run_parameters['patch_height']
-    patch_width = run_parameters['patch_width']
+
     #                   set defaults for newly added parameters
     if 'threshold' in run_parameters:
         threshold = run_parameters['threshold']
     else:
         threshold = 0
 
-    if 'image_level' in run_parameters:
-        image_level = run_parameters['image_level']
-    else:
-        image_level = 0
-
-    #                     OpenSlide open                      #
-    os_im_obj = openslide.OpenSlide(wsi_filename)
-    obj_level_diminsions = os_im_obj.level_dimensions
-
-    #                   get the start, stop locations list for the rows     -- Scaled to image_level
-    pixels_height = obj_level_diminsions[image_level][1]
-    rows_fence_array = get_fence_array(patch_length=patch_height, overall_length=pixels_height)
-
-    #                   get the start, stop locations list for the columns  -- Scaled to image_level
-    pixels_width = obj_level_diminsions[image_level][0]
-    cols_fence_array = get_fence_array(patch_length=patch_width, overall_length=pixels_width)
-
-    #                   get a thumbnail image for the patch select method   -- Scaled to image_level / thumbnail_divisor
-    thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
-    small_im = os_im_obj.get_thumbnail(thumbnail_size)
-    os_im_obj.close()
-    #                     OpenSlide close                     #
+    strided_patches_dict = get_strided_patches_dict_for_image_level(run_parameters)
+    small_im = strided_patches_dict['small_im']
+    cols_fence_array = strided_patches_dict['cols_fence_array']
+    rows_fence_array = strided_patches_dict['rows_fence_array']
+    thumbnail_divisor = strided_patches_dict['thumbnail_divisor']
 
     #                   get the binary mask as a measure of image region content
-    mask_im = get_sample_selection_mask(small_im, patch_select_method)
+    mask_im = get_sample_selection_mask(small_im, patch_select_method).astype(np.int)
 
     #                                       Rescale Fence Arrays to thumbnail image
     #                   iterator for rows:  (top_row, bottom_row, full_scale_row_number)
@@ -367,7 +494,6 @@ def get_patch_location_array_for_image_level(run_parameters):
 
         for tmb_col_lft, tmb_col_rgt, col_n in it_cols:
 
-            #           if the sum of the mask elements is larger than the threshold...
             if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > threshold:
 
                 #       add the full scale row and column of the upper left corner to the list
@@ -410,19 +536,18 @@ class PatchImageGenerator():
     """
 
     def __init__(self, run_parameters):
-
-        #                       assign inputs, Open the file
-        self.os_obj = openslide.OpenSlide(run_parameters['wsi_filename'])
+        #                       image_level_loc_array  = [(row, col), (row, col),...]     -- Scaled to image_level
+        self.image_level_loc_array = get_patch_location_array_for_image_level(run_parameters)
 
         #                       image_level determines scale, patch width and height are fixed
         self.image_level = run_parameters['image_level']
         self.patch_size = (run_parameters['patch_width'], run_parameters['patch_height'])
 
+        #                       assign inputs, Open the file
+        self.os_obj = openslide.OpenSlide(run_parameters['wsi_filename'])
+
         #                       get the scale multiplier
         _multi_ = self.os_obj.level_downsamples[self.image_level]
-
-        #                       image_level_loc_array  = [(row, col), (row, col),...]     -- Scaled to image_level
-        self.image_level_loc_array = get_patch_location_array_for_image_level(run_parameters)
 
         #                       rescale to image full size :
         self.level_0_location_array = [(int(p[0] * _multi_), int(p[1] * _multi_)) for p in self.image_level_loc_array]
@@ -627,8 +752,9 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     class_label = run_parameters['class_label']
     h = run_parameters['patch_height']
     w = run_parameters['patch_width']
-    class_label = run_parameters['class_label']
+
     output_dir = run_parameters['output_dir']
+
     if 'file_ext' in run_parameters:
         file_ext = run_parameters['file_ext']
     else:
@@ -687,6 +813,7 @@ def wsi_file_to_patches_tfrecord(run_parameters):
 
     return tfrecord_file_name
 
+
 def run_imfile_to_tfrecord(run_parameters):
     """ read the run_parameters dictionary & execute function: svs_file_to_patches_tfrecord with those
 
@@ -711,6 +838,7 @@ def run_imfile_to_tfrecord(run_parameters):
         (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(tfrecord_file_name)
         if size > 0:
             print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
+
 
 """ Use Case 4 """
 
@@ -812,6 +940,7 @@ def write_tfrecord_marked_thumbnail_image(run_parameters):
     thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
     thumb_preview.save(output_file_name)
     print('tfrecord thumnail preview saved to:', output_file_name)
+
 
 def tf_record_to_marked_thumbnail_image(run_parameters):
     """ Usage: thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)

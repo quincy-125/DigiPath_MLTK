@@ -25,3 +25,8 @@ border_color:           blue
 image_level:            0
 
 # output_file_name:     defaults to output_dir + tfrecord_file_name(base) + .jpg
+
+patch_stride_fraction:  1.0
+
+offset_x:               0
+offset_y:               0

@@ -36,3 +36,8 @@ image_level:            0
 
 #                       red, blue, green, yellow, black,...
 border_color:           blue
+
+patch_stride_fraction:  1.0
+
+offset_x:               0
+offset_y:               0
