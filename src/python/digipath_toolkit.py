@@ -454,7 +454,7 @@ def get_patch_location_array_for_image_level(run_parameters):
                                 threshold:              minimimum sum of thresholded image (default = 0)
                                 image_level:            openslide image pyramid level 0,1,2,...
     Returns:
-        patch_location_array
+        patch_location_array:   [[x, y], [x, y],... ]   n_pairs x 2 numpy array
 
     """
     #                   initialize an empty return value
@@ -497,9 +497,9 @@ def get_patch_location_array_for_image_level(run_parameters):
             if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > threshold:
 
                 #       add the full scale row and column of the upper left corner to the list
-                patch_location_array.append((row_n, col_n))
+                patch_location_array.append((col_n, row_n))
 
-    #                   patch locations at image_level scale   [(row, col), (row, col),...]     -- Scaled to image_level
+    #                   patch locations at image_level scale   [(x, y), (x, y),...]     -- Scaled to image_level
     return patch_location_array
 
 """
@@ -572,12 +572,12 @@ class PatchImageGenerator():
             patch_dict = {'patch_number': self._patch_number}
 
             #                   insert the next image_level scaled x and y into the return dictionary
-            patch_dict['image_level_x'] = self.image_level_loc_array[self._patch_number][1]
-            patch_dict['image_level_y'] = self.image_level_loc_array[self._patch_number][0]
+            patch_dict['image_level_x'] = self.image_level_loc_array[self._patch_number][0]
+            patch_dict['image_level_y'] = self.image_level_loc_array[self._patch_number][1]
 
             #                   insert the full scale location x, y in return dict and the location tuple
-            patch_dict['level_0_x'] = self.level_0_location_array[self._patch_number][1]
-            patch_dict['level_0_y'] = self.level_0_location_array[self._patch_number][0]
+            patch_dict['level_0_x'] = self.level_0_location_array[self._patch_number][0]
+            patch_dict['level_0_y'] = self.level_0_location_array[self._patch_number][1]
             location = (patch_dict['level_0_x'], patch_dict['level_0_y'])
 
             #                   read the patch_sized image at the loaction and insert it in the return dict
@@ -1085,7 +1085,7 @@ def get_patch_locations_preview_imagefor_image_level(run_parameters):
     patch_location_array = get_patch_location_array_for_image_level(run_parameters)
 
     #                   draw the rectangles on the thumb_preview image
-    for r, c in patch_location_array[:]:
+    for c, r in patch_location_array[:]:
         #               upper left corner = scaled column & row location of patch on thumbnail image
         ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
         #               lower right corner = upper left corner + scaled patch size
