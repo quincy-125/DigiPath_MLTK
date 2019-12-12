@@ -800,8 +800,8 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     _, file_name_base = os.path.split(run_parameters['wsi_filename'])
     file_name_base, _ = os.path.splitext(file_name_base)
     class_label = run_parameters['class_label']
-    h = run_parameters['patch_height']
-    w = run_parameters['patch_width']
+    # h = run_parameters['patch_height']
+    # w = run_parameters['patch_width']
 
     output_dir = run_parameters['output_dir']
 
@@ -892,10 +892,11 @@ def run_imfile_to_tfrecord(run_parameters):
 """ Use Case 3 """
 
 
-def registration_pair_to_directory(run_parameters):
+def run_registration_pairs(run_parameters):
     """ Usage: registration_pair_to_directory(run_parameters)
 
     """
+    method = run_parameters['method']
     # insert the offset into the run_parmaters:
     if os.path.isfile(run_parameters['offset_data_file']):
         offset_df = pd.read_csv(run_parameters['offset_data_file'])
@@ -958,39 +959,98 @@ def registration_pair_to_directory(run_parameters):
     X_dim = (0, X)
     Y_dim = (0, Y)
 
-    stop_teration = False
-    patch_dict = fixed_im_generator.next_patch()
-    patch_number = -2
-    while stop_teration == False:
-        # form the patch filename
-        patch_image_name_dict['location_x'] = patch_dict['image_level_x']
-        patch_image_name_dict['location_y'] = patch_dict['image_level_y']
-        patch_name = dict_to_patch_name(patch_image_name_dict)
-        patch_full_name = os.path.join(output_dir, patch_name)
+    if method == 'registration_to_dir':
+        stop_teration = False
+        patch_dict = fixed_im_generator.next_patch()
+        patch_number = -2
+        while stop_teration == False:
+            # form the patch filename
+            patch_image_name_dict['location_x'] = patch_dict['image_level_x']
+            patch_image_name_dict['location_y'] = patch_dict['image_level_y']
+            patch_name = dict_to_patch_name(patch_image_name_dict)
+            patch_full_name = os.path.join(output_dir, patch_name)
 
-        # get the full-scale image location of the patch
-        x1 = patch_dict['level_0_x'] + float_offset_x
-        y1 = patch_dict['level_0_y'] + float_offset_y
+            # get the full-scale image location of the patch
+            x1 = patch_dict['level_0_x'] + float_offset_x
+            y1 = patch_dict['level_0_y'] + float_offset_y
 
-        # define the patch full boundry
-        x_b = [x1, x1 + patch_size[0]]
-        y_b = [y1, y1 + patch_size[1]]
+            # define the patch full boundry
+            x_b = [x1, x1 + patch_size[0]]
+            y_b = [y1, y1 + patch_size[1]]
 
-        # check bounds, get float image, write the pair
-        if check_patch_in_bounds(x_b, y_b, X_dim, Y_dim) == True:
-            flot_im = wsi_float_obj.read_region((x1, y1), image_level, patch_size)
-            im_pair = im_pair_hori(patch_dict['patch_image'], flot_im)
+            # check bounds, get float image, write the pair
+            if check_patch_in_bounds(x_b, y_b, X_dim, Y_dim) == True:
+                flot_im = wsi_float_obj.read_region((x1, y1), image_level, patch_size)
+                im_pair = im_pair_hori(patch_dict['patch_image'], flot_im)
 
-            # write the file
-            im_pair.convert('RGB').save(patch_full_name)
+                # write the file
+                im_pair.convert('RGB').save(patch_full_name)
 
-        try:
-            patch_dict = fixed_im_generator.next_patch()
-            patch_number = patch_dict['patch_number']
-        except:
-            print('%i images written' % (patch_number - 2))
-            stop_teration = True
-            pass
+            try:
+                patch_dict = fixed_im_generator.next_patch()
+                patch_number = patch_dict['patch_number']
+            except:
+                print('%i images written' % (patch_number - 2))
+                stop_teration = True
+                pass
+
+    elif method == 'registration_to_tfrecord':
+            tfrecord_file_name = file_name_base + '.tfrecords'
+            tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
+
+            with tf_io.TFRecordWriter(tfrecord_file_name) as writer:
+                seq_number = 0
+                while True:
+                    try:
+                        patch_dict = fixed_im_generator.next_patch()
+                        patch_image_name_dict['location_x'] = patch_dict['image_level_x']
+                        patch_image_name_dict['location_y'] = patch_dict['image_level_y']
+                        patch_name = dict_to_patch_name(patch_image_name_dict)
+
+                        # get the full-scale image location of the patch
+                        x1 = patch_dict['level_0_x'] + float_offset_x
+                        y1 = patch_dict['level_0_y'] + float_offset_y
+
+                        # define the patch full boundry
+                        x_b = [x1, x1 + patch_size[0]]
+                        y_b = [y1, y1 + patch_size[1]]
+
+                        # check bounds, get float image, write the pair
+                        if check_patch_in_bounds(x_b, y_b, X_dim, Y_dim) == True:
+                            flot_im = wsi_float_obj.read_region((x1, y1), image_level, patch_size)
+                            im_pair = im_pair_hori(patch_dict['patch_image'], flot_im)
+                            image_string = im_pair.convert('RGB')
+
+                            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                            try:
+                                image_string.save(tmp.name)
+                                image_string = open(tmp.name, 'rb').read()
+
+                            except:
+                                print('Image write-read exception with patch # %i, named:\n%s' % (seq_number, patch_name))
+                                pass
+
+                            finally:
+                                os.unlink(tmp.name)
+                                tmp.close()
+
+                            tf_example_obj = tf_imp_dict(image_string,
+                                                         label=seq_number,
+                                                         image_name=bytes(patch_name, 'utf8'),
+                                                         class_label=bytes(class_label, 'utf8'))
+
+                            writer.write(tf_example_obj.SerializeToString())
+                            seq_number += 1
+
+                    except StopIteration:
+                        print('%5i images written to %s' % (seq_number, tfrecord_file_name))
+                        break
+
+            if os.path.isfile(tfrecord_file_name):
+                (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(tfrecord_file_name)
+                if size > 0:
+                    print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
+
 
     # Close the float image
     try:
@@ -998,6 +1058,8 @@ def registration_pair_to_directory(run_parameters):
         wsi_float_obj.close()
     except:
         pass
+
+
 
 """ Use Case 4 """
 

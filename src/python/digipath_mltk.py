@@ -22,14 +22,16 @@ def write_mask_preview(run_parameters):
     from digipath_toolkit import write_mask_preview_set
     write_mask_preview_set(run_parameters)
 
-def registration_to_dir(run_parameters):
-    from digipath_toolkit import registration_pair_to_directory
-    registration_pair_to_directory(run_parameters)
+def registration_functions(run_parameters):
+    from digipath_toolkit import run_registration_pairs
+    run_registration_pairs(run_parameters)
 
 SELECT = {"image_2_tfrecord": image_2_tfrecord,
           "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb,
           'wsi_2_patches_dir': wsi_2_patches_dir,
-          'wrte_mask_preview_set': write_mask_preview, 'registration_to_dir': registration_to_dir}
+          'wrte_mask_preview_set': write_mask_preview,
+          'registration_to_dir': registration_functions,
+          'registration_to_tfrecord': registration_functions}
 
 def main():
     import sys

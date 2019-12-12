@@ -49,6 +49,9 @@ test_write_mask_preview:
 test_registration_pairs_dir:
 	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file registration_pairs_to_dir.yml
 
+test_registration_pairs_tfr:
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file registration_pairs_to_tfrecord.yml
+
 
 # # # # # # # 
 # Uint tests
