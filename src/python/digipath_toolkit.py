@@ -926,7 +926,8 @@ def run_annotation(run_parameters):
 
 
 def run_registration_pairs(run_parameters):
-    """ Usage: registration_pair_to_directory(run_parameters)
+    """ Usage:  registration_pair_to_directory(run_parameters)
+                
     Args:       run_parameters
                     method              one of - [registration_to_dir, registration_to_tfrecord]
                     wsi_filename        'fixed' image
@@ -940,6 +941,10 @@ def run_registration_pairs(run_parameters):
                 (optional run_parameters)
                     file_ext            .jpg is default, and only one implemented for tensorflow in this version
                                         (note that .png is much better compression but much, much slower)
+
+    Returns:
+        (nothing)   writes image files or tfrecord depending on run_parameters['method'] input
+
     """
     method = run_parameters['method']
     # insert the offset into the run_parmaters:
