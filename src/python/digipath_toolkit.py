@@ -700,7 +700,12 @@ def patch_name_parts_clean_with_warning(file_name_base, class_label):
 
     return name_base_clean, class_label_clean
 
-""" Use Case 1 """
+"""                         Use Case 1 
+
+        Givin a WSI (Whole Slide Image) and a label, export patches into TFRecords or Folders (raw images).
+        
+        
+"""
 
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -889,7 +894,25 @@ def run_imfile_to_tfrecord(run_parameters):
         if size > 0:
             print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
 
-""" Use Case 3 """
+"""                             Use Case 2
+
+        Givin a WSI (Whole Slide Image) and an Annotation File, export patches into TFRecords.
+        
+        1.  Annotation File must follow QuPath Annotation convention
+        2.  Requires dictionary for class labels 
+"""
+
+def run_annotation(run_parameters):
+    print('running annotation')
+    pass
+
+
+"""                             Use Case 3 
+
+        Givin a WSI and another WSI, do image registration, export pair of patches into TFRecords.
+        
+        One Whole Slide Image will be 'fixed' and the other WSI will be the 'float' image.
+"""
 
 
 def run_registration_pairs(run_parameters):
@@ -1061,7 +1084,12 @@ def run_registration_pairs(run_parameters):
 
 
 
-""" Use Case 4 """
+"""                             Use Case 4 
+
+        Givin a WSI & TFRecord, generate a masked Thumbnail 
+        
+        (graphic representation of the WSI in the TFRecord)
+"""
 
 def image_file_to_patches_directory_for_image_level(run_parameters):
     """ Usage: image_file_to_patches_directory_for_image_level(run_parameters)
