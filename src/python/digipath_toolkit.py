@@ -903,7 +903,17 @@ def run_imfile_to_tfrecord(run_parameters):
 """
 
 def run_annotation(run_parameters):
+    """
+
+    Args:       run_parameters:
+                    run_directory
+    """
     print('running annotation')
+    if len(run_parameters) > 0:
+        for k, v in run_parameters.items():
+            print('%25s: %s'%(k,v))
+
+
     pass
 
 
@@ -917,7 +927,12 @@ def run_annotation(run_parameters):
 
 def run_registration_pairs(run_parameters):
     """ Usage: registration_pair_to_directory(run_parameters)
-
+    Args:       run_parameters
+                    method              one of - [registration_to_dir, registration_to_tfrecord]
+                    wsi_filename        'fixed' image
+                    wsi_floatname       'float' image
+                    offset_data_file    csv with (truth_offset_x, truth_offset_y)
+                    
     """
     method = run_parameters['method']
     # insert the offset into the run_parmaters:
