@@ -370,10 +370,12 @@ def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
 
     """
     #                   fence stride is the distance between starting points
-    fence_stride = int(np.abs(patch_len * patch_stride)) + 1
+    # fence_stride = int(np.abs(patch_len * patch_stride)) + 1
+    fence_stride = max(int(np.abs(patch_len * patch_stride)), 1)
 
     #                   pre-allocate a max number-of-patches by 2 numpy array
-    array_size = 1 + np.abs(arr_end - arr_start) // fence_stride
+    # array_size = 1 + np.abs(arr_end - arr_start) // fence_stride
+    array_size = np.abs(arr_end - arr_start) // fence_stride
     fence_array = np.zeros((array_size, 2)).astype(np.int)
 
     #                   initialize the first location and a fence_array index
@@ -392,9 +394,8 @@ def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
 
     #                   cover the short ending case
     if pair_number < fence_array.shape[0]:
-        if fence_array[pair_number, 1] != arr_end - 1:
-            fence_array[pair_number, :] = (arr_end - patch_len - 1, arr_end - 1)
-
+        # if fence_array[pair_number, 1] != arr_end - 1:
+        #     fence_array[pair_number, :] = (arr_end - patch_len - 1, arr_end - 1)
         fence_array = fence_array[0:pair_number + 1, :]
 
     return fence_array
