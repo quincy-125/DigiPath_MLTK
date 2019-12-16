@@ -932,7 +932,14 @@ def run_registration_pairs(run_parameters):
                     wsi_filename        'fixed' image
                     wsi_floatname       'float' image
                     offset_data_file    csv with (truth_offset_x, truth_offset_y)
-                    
+                    patch_width         pixels width of patch selection
+                    patch_height        pixels height of patch selection
+                    image_level         openslide pyramid image level 0, 1, ...
+                    class_label         label for train-test
+                    output_dir          where the patches or tfrecord will be wtitten
+                (optional run_parameters)
+                    file_ext            .jpg is default, and only one implemented for tensorflow in this version
+                                        (note that .png is much better compression but much, much slower)
     """
     method = run_parameters['method']
     # insert the offset into the run_parmaters:
