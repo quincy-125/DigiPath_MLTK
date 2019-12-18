@@ -13301,9 +13301,7 @@ div#notebook {
     <span class="k">return</span> <span class="n">mask_im</span><span class="p">,</span> <span class="n">img</span>
 
 <span class="k">def</span> <span class="nf">get_mask_for_label</span><span class="p">(</span><span class="n">lbl_dict_list</span><span class="p">,</span> <span class="n">thumbnail_divisor</span><span class="p">,</span> <span class="n">image_dimensions</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; label_mask = </span>
-<span class="sd">        get_mask_for_label(label_str, labels_dict, thumbnail_divisor, image_dimensions)</span>
-<span class="sd">    </span>
+    <span class="sd">&quot;&quot;&quot; label_mask = get_mask_for_label(lbl_dict_list, thumbnail_divisor, image_dimensions)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">lbl_mask</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="c1">#     for lbl, lbl_dict_list in labels_dict.items():</span>
@@ -13318,6 +13316,57 @@ div#notebook {
     <span class="n">lbl_mask</span><span class="p">[</span><span class="n">lbl_mask</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
     
     <span class="k">return</span> <span class="n">lbl_mask</span>
+
+
+<span class="k">def</span> <span class="nf">get_heirarchical_mask_dict</span><span class="p">(</span><span class="n">run_parameters</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; heirarchical_mask_dict = get_heirarchical_mask_dict(run_parameters)</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        run_parameters:             with keys:</span>
+<span class="sd">                                        csv_file_name</span>
+<span class="sd">                                        xml_file_name</span>
+<span class="sd">                                        thumbnail_divisor</span>
+<span class="sd">                                        wsi_filename</span>
+<span class="sd">                                    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        heirarchical_mask_dict:     {label_1: mask_image, ...}</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="n">heirarchical_mask_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">csv_file_name</span> <span class="o">=</span> <span class="n">run_parameters</span><span class="p">[</span><span class="s1">&#39;csv_file_name&#39;</span><span class="p">]</span>
+    <span class="n">xml_file_name</span> <span class="o">=</span> <span class="n">run_parameters</span><span class="p">[</span><span class="s1">&#39;xml_file_name&#39;</span><span class="p">]</span>
+    <span class="n">thumbnail_divisor</span> <span class="o">=</span> <span class="n">run_parameters</span><span class="p">[</span><span class="s1">&#39;thumbnail_divisor&#39;</span><span class="p">]</span>
+    <span class="n">wsi_filename</span> <span class="o">=</span> <span class="n">run_parameters</span><span class="p">[</span><span class="s1">&#39;wsi_filename&#39;</span><span class="p">]</span>
+    
+    <span class="n">os_obj</span> <span class="o">=</span> <span class="n">openslide</span><span class="o">.</span><span class="n">OpenSlide</span><span class="p">(</span><span class="n">wsi_filename</span><span class="p">)</span>
+    <span class="n">image_dimensions</span> <span class="o">=</span> <span class="n">os_obj</span><span class="o">.</span><span class="n">dimensions</span>
+    <span class="n">os_obj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+    <span class="c1"># get the priority dict</span>
+    <span class="n">regions_dict</span> <span class="o">=</span> <span class="n">get_region_Id_dict</span><span class="p">(</span><span class="n">xml_file_name</span><span class="p">,</span> <span class="n">csv_file_name</span><span class="p">)</span>
+    <span class="n">priority_dict</span><span class="p">,</span> <span class="n">priority_list</span> <span class="o">=</span> <span class="n">regions_dict_to_priority_dict</span><span class="p">(</span><span class="n">regions_dict</span><span class="p">)</span>
+    
+    <span class="c1"># iterate the priority dict into the heirarchical mask set </span>
+    <span class="c1"># -- subtracting all higher priority masks from the new lower ones</span>
+    <span class="n">higher_priorities_mask</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">priority_list</span><span class="p">:</span>
+        <span class="n">p_dict_list</span> <span class="o">=</span> <span class="n">priority_dict</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+        <span class="n">labels_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p_dict</span> <span class="ow">in</span> <span class="n">p_dict_list</span><span class="p">:</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">p_dict</span><span class="p">[</span><span class="s1">&#39;class_label_text&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels_list</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dire Warning: More than one label with same priority&#39;</span><span class="p">)</span>
+            <span class="n">labels_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+            
+        <span class="n">heirarchical_mask_dict</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_mask_for_label</span><span class="p">(</span><span class="n">p_dict_list</span><span class="p">,</span> <span class="n">thumbnail_divisor</span><span class="p">,</span> <span class="n">image_dimensions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">higher_priorities_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">higher_priorities_mask</span> <span class="o">=</span> <span class="n">heirarchical_mask_dict</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">heirarchical_mask_dict</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">higher_priorities_mask</span><span class="p">),</span> 
+                                                           <span class="n">heirarchical_mask_dict</span><span class="p">[</span><span class="n">label</span><span class="p">])</span>
+            <span class="n">higher_priorities_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">heirarchical_mask_dict</span><span class="p">[</span><span class="n">label</span><span class="p">],</span> <span class="n">higher_priorities_mask</span><span class="p">)</span>
+            
+    <span class="k">return</span> <span class="n">heirarchical_mask_dict</span>
 </pre></div>
 
     </div>
@@ -13355,7 +13404,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Test and display function get_region_mask()</span>
@@ -13371,8 +13420,10 @@ div#notebook {
 
 <span class="k">for</span> <span class="n">r_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_regions</span><span class="p">):</span>
     <span class="n">region_coords</span> <span class="o">=</span> <span class="n">region_id_dict</span><span class="p">[</span><span class="n">r_id</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;coords&#39;</span><span class="p">]</span>
+    <span class="n">region_priority</span> <span class="o">=</span> <span class="n">region_id_dict</span><span class="p">[</span><span class="n">r_id</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;Priority&#39;</span><span class="p">]</span>
+    <span class="n">region_label</span> <span class="o">=</span> <span class="n">region_id_dict</span><span class="p">[</span><span class="n">r_id</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;class_label_text&#39;</span><span class="p">]</span>
     <span class="n">thumbnail_divisor</span> <span class="o">=</span> <span class="mi">200</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;region_Id&#39;</span><span class="p">,</span> <span class="n">r_id</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;region_Id:&#39;</span><span class="p">,</span> <span class="n">r_id</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">Priority:&#39;</span><span class="p">,</span> <span class="n">region_priority</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">label:&#39;</span><span class="p">,</span> <span class="n">region_label</span><span class="p">)</span>
     <span class="n">mask_im</span><span class="p">,</span> <span class="n">img</span> <span class="o">=</span> <span class="n">get_region_mask</span><span class="p">(</span><span class="n">region_coords</span><span class="p">,</span> <span class="n">thumbnail_divisor</span><span class="p">,</span> <span class="n">image_dimensions</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">r_id</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">uber_mask</span> <span class="o">+=</span> <span class="n">mask_im</span>
@@ -13400,7 +13451,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 0
+<pre>region_Id: 0 	Priority: 5 	label: offset
 </pre>
 </div>
 </div>
@@ -13426,7 +13477,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 1
+<pre>region_Id: 1 	Priority: 3 	label: Region
 </pre>
 </div>
 </div>
@@ -13452,7 +13503,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 2
+<pre>region_Id: 2 	Priority: 4 	label: malignant
 </pre>
 </div>
 </div>
@@ -13478,7 +13529,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 3
+<pre>region_Id: 3 	Priority: 7 	label: normal
 </pre>
 </div>
 </div>
@@ -13504,7 +13555,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 4
+<pre>region_Id: 4 	Priority: 1 	label: fat
 </pre>
 </div>
 </div>
@@ -13530,7 +13581,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 5
+<pre>region_Id: 5 	Priority: 0 	label: null
 </pre>
 </div>
 </div>
@@ -13556,7 +13607,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 6
+<pre>region_Id: 6 	Priority: 2 	label: lymph
 </pre>
 </div>
 </div>
@@ -13582,7 +13633,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>region_Id 7
+<pre>region_Id: 7 	Priority: 6 	label: ink
 </pre>
 </div>
 </div>
@@ -13608,7 +13659,7 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Total time to get &amp; display 8 region_masks: 0.083
+<pre>Total time to get &amp; display 8 region_masks: 0.056
 
 
 sum of smaller masks
@@ -13663,71 +13714,6 @@ sum of smaller masks
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Test assumption that a label with multiple coords is correct &amp;&amp; merge layers</span>
-<span class="n">merged_labels_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-<span class="c1"># merge_list = [&#39;malignant&#39;,&#39;lymph&#39;,&#39;null&#39;,&#39;ink&#39;]</span>
-<span class="n">merge_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;normal&#39;</span><span class="p">,</span> <span class="s1">&#39;fat&#39;</span><span class="p">,</span> <span class="s1">&#39;null&#39;</span><span class="p">,</span><span class="s1">&#39;ink&#39;</span><span class="p">]</span>
-<span class="n">merge_label</span> <span class="o">=</span> <span class="s1">&#39;merged_labels&#39;</span>
-<span class="k">for</span> <span class="n">k_reg_id</span><span class="p">,</span> <span class="n">reg_dict</span> <span class="ow">in</span> <span class="n">regions_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="n">reg_dict</span><span class="p">[</span><span class="s1">&#39;region_Id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">k_reg_id</span>
-    <span class="k">if</span> <span class="n">reg_dict</span><span class="p">[</span><span class="s1">&#39;class_label_text&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">merge_list</span><span class="p">:</span>
-        <span class="n">merged_labels_dict</span><span class="p">[</span><span class="n">merge_label</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reg_dict</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">merged_labels_dict</span><span class="p">[</span><span class="n">merge_label</span><span class="p">]))</span>
-
-<span class="n">merged_lbl_msk</span> <span class="o">=</span> <span class="n">get_mask_for_label</span><span class="p">(</span><span class="n">merged_labels_dict</span><span class="p">[</span><span class="n">merge_label</span><span class="p">],</span> 
-                                    <span class="n">thumbnail_divisor</span><span class="p">,</span> 
-                                    <span class="n">image_dimensions</span><span class="p">)</span>
-
-<span class="n">m_lbl_im</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">((</span><span class="n">merged_lbl_msk</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span> <span class="o">*</span> <span class="mi">255</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;mask for </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">merge_label</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">m_lbl_im</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-    <div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>4
-mask for merged_labels
-</pre>
-</div>
-</div>
-
-<div class="output_area">
-
-    <div class="prompt"></div>
-
-
-
-
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnoAAAF6CAAAAACrKapNAAAD+ElEQVR4nO3dwW6jMBQFUBjN//8ys6iaaWhIbGN4hnfOok2kLiz79pokBKYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKDVEj0ArutP9ADIalf0FrVHM61HkD3RWyZHezTTegTZEb3lx0+opfUI0h69ZfUbqmg9gjRHb3nxCMppPYK0Rm/ZeAyFtB5BGqO3vHkGJbQeQdqit645tUe1tujNH57DRzZcgjRGb37zDEpoPYK0Rm/eeAyFtB5BmqM3v3gE5bQeQdqjN69+QxWtR5Ad0Zt//IRaWo8ge6I3T0qPZlqPS3KyFM20HgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJDIVe5x9nVfoquMlgJXWMyn22FdYcCUuMCNqtyI7Z5GLJFlmh4D+527EUdMg/EW8lPJjTdimvyNHsAzm2seYx3rlSRPOm9ipO2rJFQjjZddxlnKojYbZ7jsNcyGax/NZpToFSZPQO9jhB2sKk8jDJgeBmg9TZZTfImUJW9+/G38iOkifCE/J+9piMsAQ6aLwT7NWPmdstn2fBfRFfImSRtD03s3Eb2KW9GLHheHC17ijeQJXgKRx3oO21KL65f6ozxuJar1NF56MQXzPnhKL4WIZf7QeJKXw5nrXPORGbd3ykLXHNhJXhbHr7RTonjp6LWueyUreYkcutiV76AIXipHLPfy4+y60IEwsv4r/n3ZClstbx0UvVqSl88A382YJC+lEc5SFryUBmg9ycspvPUEL6vuK+8dFcpEtp7gpRYXvTGDV1DaYw78erq/zLAwlOnfeuvs+dIZLx2/4c7Tc/zmx2e8pHbOsd68Ch+c9jLjcT6B3PHlxFe4QsdPA3yQRk6iRxDRI4joEUT0CCJ6BBE9gogeQUSPIKJHENEjiOgRRPQIInoEET0AAADuwXd13vr/HU4T1ZsZ3ba+boK56sp0vvT6ah0mqyez+cytA09jLh/cPfBc4Re0HYDbQofI/k9cH7vsM9ZN8tMHGgpPR3aSO3piFCh19NqSJ699JH6ZIUKxUrdeI5ntIm/0BChY2uhJXrSs0ZO8cFmjRzjRI4joEUT0CJI0erteZTiBoIuk0SOe6FVTen0kjd6O+EheJ0mjRzzRq6T0ehE9gqT9J257eyXtdB0g8ami9QSvp7QbbkOMJK+rxNNZs+UmnqbD2HA/ELqj5J5ZV1gJlHx2N7OXfF7OkH2KXUMvjKn+Tp+ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAf6MJZ988FvIoAAAAASUVORK5CYII=
-"
->
-</div>
-
-</div>
-
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -14864,14 +14850,18 @@ Priority: 0 	(1 dictionaries)
 <div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct run_parameter set, mask set</span>
-<span class="k">def</span> <span class="nf">get_heirarchical_mask_dict</span><span class="p">(</span><span class="n">run_parameters</span><span class="p">):</span>
-    <span class="c1"># get the priority dict</span>
-    
-    <span class="c1"># iterate the priority dict into the heirarchical mask set </span>
-    <span class="c1"># -- subtracting all higher priority masks from the new lower ones</span>
-    
-    <span class="k">pass</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="sd">&quot;&quot;&quot;                             </span>
+<span class="sd">heirarchical_mask_dict = get_heirarchical_mask_dict(run_parameters)</span>
+
+<span class="sd">Args:</span>
+<span class="sd">    run_parameters:             with keys:</span>
+<span class="sd">                                    csv_file_name</span>
+<span class="sd">                                    xml_file_name</span>
+<span class="sd">                                    thumbnail_divisor</span>
+<span class="sd">                                    wsi_filename</span>
+<span class="sd">Returns:</span>
+<span class="sd">    heirarchical_mask_dict:     {label_1: mask_image, ...}</span>
+<span class="sd">&quot;&quot;&quot;</span>  
 
 <span class="k">def</span> <span class="nf">get_labeled_patch_location_arrays_for_image_level</span><span class="p">(</span><span class="n">run_parameters</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">run_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -14935,6 +14925,261 @@ Priority: 0 	(1 dictionaries)
 </div>
 </div>
 
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Test get_heirarchical_mask_dict</span>
+
+<span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">heirarchical_mask_dict</span> <span class="o">=</span> <span class="n">get_heirarchical_mask_dict</span><span class="p">(</span><span class="n">run_parameters</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">merge_label</span><span class="p">,</span> <span class="n">merged_lbl_msk</span> <span class="ow">in</span> <span class="n">heirarchical_mask_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">merged_lbl_msk</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">merge_label</span><span class="p">,</span> <span class="s1">&#39;Is Empty Mask&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">m_lbl_im</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">((</span><span class="n">merged_lbl_msk</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span> <span class="o">*</span> <span class="mi">255</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;mask for </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">merge_label</span><span class="p">))</span>
+        <span class="n">display</span><span class="p">(</span><span class="n">m_lbl_im</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;total run time: </span><span class="si">%0.3f</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>mask for normal
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnoAAAF6CAAAAACrKapNAAABPElEQVR4nO3SQQrAIBAEQeP//2yeEAShhVSd9zAsPQYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAW556wGXW94mXnTHrAfyV9IhIj4j0iEiPiPSISI+I9IhIj4j0iEiPiPSISI+I9IhIj4j0iEiPiPSISI+I9IhIDwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACg9AIk0wEs/72mSQAAAABJRU5ErkJggg==
+"
+>
+</div>
+
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>mask for ink
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnoAAAF6CAAAAACrKapNAAACXElEQVR4nO3d3W6DMAwG0DDt/V+ZXa0/61qSFrDB59xV4sKSPzkB0rY1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAgpugCOs2tteNUS4cjNHO+/XCEgunxFV3Asnn5Eg4o4xCZW7sU9pi7jBXzhnyNXBpy+SrmLd/RBdyzuNaRa6/XkzzpPIlMy1dPqDLVy0fytLJrmuUpl0+lWXCto9VkiV5n8gT0PDKsYEN5ylAwa0gw9UyymuKHSF/ypsu18RWzivBGLifvrsQ5QcmsItnbjD8eUzZZns8ieoS8SNKT0sy9k4ju4rPoRdfF5oJb/CR5gldA5F7Ptq20uPkyvsvjVKKmnolXXsyAeR08Q6+EiDYvTDzJq2HPPo+8MuP0dmn0yMZO8qrYvtOORPGvrXs9dicreYVs2uzBJyiCV8oW7Z5vTteFFkJm63f892crLLW8tFH0RklePQm+m9Ekr6QMp5QFr6QEU0/yagqfeoJX1eqd90SFPpFTT/BKi4ue4BW3+m2GRNEn7OSKiFa3TwJu4zdd3vFS2l4huIZP7Git7RoE/zUFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE+AGvvC5LpyHuygAAAABJRU5ErkJggg==
+"
+>
+</div>
+
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>mask for offset
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>mask for malignant
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnoAAAF6CAAAAACrKapNAAABsUlEQVR4nO3aywrCQBAEwFX8/1+OFxXzcDd4yfRSdRJPDd1MItgaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH+4XR3gjOXzKSIupwR0uWy/CMjMWPkad8NrrQXEZuhxdYC+4+Exg9rno7O82sEZq3v1HLzJ3a8O8MtoeZaZruhz68ywikbnpLJXj9kVnd7NSZte5YoHT93K0Rkr3l93fcWz01e/vt/rq5+djqLvel+89k0qpNfD0xeSnWM59e3Xl5OdA1H1bdYXlZ2ttPq+15eWnZX6PzPW/OiYRmSTr9MXmZ231PqWlpuddP42BQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEewLZFhMiqYMo0gAAAABJRU5ErkJggg==
+"
+>
+</div>
+
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>mask for Region
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>lymph Is Empty Mask
+fat Is Empty Mask
+null Is Empty Mask
+total run time: 0.062
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
 </div>
 </div>
 
