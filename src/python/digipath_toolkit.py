@@ -370,11 +370,9 @@ def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
 
     """
     #                   fence stride is the distance between starting points
-    # fence_stride = int(np.abs(patch_len * patch_stride)) + 1
     fence_stride = max(int(np.abs(patch_len * patch_stride)), 1)
 
     #                   pre-allocate a max number-of-patches by 2 numpy array
-    # array_size = 1 + np.abs(arr_end - arr_start) // fence_stride
     array_size = np.abs(arr_end - arr_start) // fence_stride
     fence_array = np.zeros((array_size, 2)).astype(np.int)
 
@@ -394,8 +392,6 @@ def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
 
     #                   cover the short ending case
     if pair_number < fence_array.shape[0]:
-        # if fence_array[pair_number, 1] != arr_end - 1:
-        #     fence_array[pair_number, :] = (arr_end - patch_len - 1, arr_end - 1)
         fence_array = fence_array[0:pair_number + 1, :]
 
     return fence_array
@@ -806,9 +802,6 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     _, file_name_base = os.path.split(run_parameters['wsi_filename'])
     file_name_base, _ = os.path.splitext(file_name_base)
     class_label = run_parameters['class_label']
-    # h = run_parameters['patch_height']
-    # w = run_parameters['patch_width']
-
     output_dir = run_parameters['output_dir']
 
     if 'file_ext' in run_parameters:
@@ -823,7 +816,7 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     tfrecord_file_name = file_name_base + '.tfrecords'
     tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
 
-    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user that input parameter changed
+    # sanitize case_id, class_label and file_ext so that they may be decoded - warns user if input parameter changed
     file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
     patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
 
@@ -967,9 +960,6 @@ def run_registration_pairs(run_parameters):
     float_offset_y = run_parameters['float_offset_y']
 
     image_level = run_parameters['image_level']
-
-    # for k, v in run_parameters.items():
-    #     print('%25s: %s' % (k, v))
 
     image_file_name = run_parameters['wsi_filename']
 
