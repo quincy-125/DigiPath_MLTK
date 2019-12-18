@@ -24,6 +24,7 @@ from tensorflow import io as tf_io
 
 import openslide
 
+MIN_STRIDE_PIXELS = 3
 """
                             parser utility: 
 """
@@ -215,8 +216,46 @@ def patch_name_to_dict(patch_file_name):
     return patch_image_name_dict
 
 
+def check_patch_in_bounds(x, y, X_dim, Y_dim):
+    """ Usage: TrueFalse = check_patch_in_bounds(x, y, X_dim, Y_dim)
+                determine if the box is within the image
+    Args:
+        x:               a tuple, list or array (x_start, x_end)
+        y:               a tuple, list or array (y_start, Y_end)
+        X_dim:           a tuple, list or array (Image_X_start, Image_X_end)
+        Y_dim:           a tuple, list or array (Image_Y_start, Image_Y_end)
+    """
+    if x[0] > x[1] or y[0] > y[1] or X_dim[0] > X_dim[1] or Y_dim[0] > Y_dim[1]:
+        return False
+
+    if x[0] >= X_dim[0] and y[0] >= Y_dim[0] and x[1] < X_dim[1] and y[1] < Y_dim[1]:
+        return True
+
+    else:
+        return False
+
+
+def im_pair_hori(im_0, im_1):
+    """ Usage: new_im = im_pair_hori(im_0, im_1)
+            combine a list of PIL images horizontaly
+    """
+    w0 = im_0.size[0]
+    w = w0 + im_1.size[0]
+    h = max(im_0.size[1], im_1.size[1])
+
+    new_im = tip.Image.new('RGB', (w, h))
+    box = (0, 0, w0, h)
+    new_im.paste(im_0, box)
+
+    box = (w0, 0, w, h)
+    new_im.paste(im_1, box)
+
+    return new_im
+
 def get_fence_array(patch_length, overall_length):
-    """ Usage: fence_array = get_fence_array(patch_length, overall_length)
+    """ See New Function: fence_array = get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end)
+
+        Usage: fence_array = get_fence_array(patch_length, overall_length)
         create a left-right set of pairs that descrete overall_length into patch_length segments
 
     Args:
@@ -293,6 +332,161 @@ def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None
     return mask_im
 
 
+def get_offset_array_start_and_end(array_length, array_offset, arry_2_lngth=None):
+    """ Usage:  array_start, array_end = get_offset_array_start_and_end(array_length, array_offset, arry_2_lngth)
+                single axis boundry in context of offset
+
+    Args:
+        array_length:   image dimension         (positive integer)
+        array_offset:   registration offset     (signed integer)
+        arry_2_lngth:   length of the second array (positive integer)
+
+    Returns:            (positive integers)
+        array_start:    first index in image diminsion
+        array_end:      last index + 1 in image diminsion
+    """
+    array_start = max(0, array_offset)
+    if arry_2_lngth is None:
+        array_end = min(array_length, array_length + array_offset)
+    else:
+        array_end = min(array_length, arry_2_lngth + array_start)
+
+    return array_start, array_end
+
+
+def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
+    """ Usage:   sf_array = get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end)
+                            pairs of bounds for one dimension of a patch array
+                            single axis, strided: first, last patch location array
+
+    Args:               (positive integers)
+        patch_len:      patch length, patch dimension
+        patch_stride:   percent of patch dimension - stride = floor(patch_len * patch_stride)
+        arr_start:      array start index, beginning index using closed zero-based indexing
+        arr_end:        array end index, last index using CLOSED zero-based indexing (0, arr_end]
+
+    Returns:
+        fence_array:    numpy 2 d array like [[p_start, p_end], [p_start, p_end],...]
+
+    """
+    #                   fence stride is the distance between starting points
+    fence_stride = max(int(np.abs(patch_len * patch_stride)), 1)
+
+    #                   pre-allocate a max number-of-patches by 2 numpy array
+    array_size = np.abs(arr_end - arr_start) // fence_stride
+    fence_array = np.zeros((array_size, 2)).astype(np.int)
+
+    #                   initialize the first location and a fence_array index
+    p_loc = np.array([arr_start, arr_start + patch_len]).astype(np.int)
+    pair_number = 0
+
+    #                   walk toward the end
+    while p_loc[1] < arr_end:
+        #               add this location pair to the fence array
+        fence_array[pair_number, :] = p_loc
+        pair_number += 1
+
+        #               advance the next pair
+        p_loc[0] = p_loc[0] + fence_stride
+        p_loc[1] = p_loc[0] + patch_len
+
+    #                   cover the short ending case
+    if pair_number < fence_array.shape[0]:
+        fence_array = fence_array[0:pair_number + 1, :]
+
+    return fence_array
+
+
+def get_strided_patches_dict_for_image_level(run_parameters):
+    """ Usage: strided_patches_dict = get_strided_patches_dict_for_image_level(run_parameters)
+    Args:
+
+    Returns:
+
+    """
+    wsi_filename = run_parameters['wsi_filename']
+    thumbnail_divisor = run_parameters['thumbnail_divisor']
+    patch_select_method = run_parameters['patch_select_method']
+    patch_height = run_parameters['patch_height']
+    patch_width = run_parameters['patch_width']
+
+    #                   set defaults for newly added parameters
+    if 'threshold' in run_parameters:
+        threshold = run_parameters['threshold']
+    else:
+        threshold = 0
+
+    if 'image_level' in run_parameters:
+        image_level = run_parameters['image_level']
+    else:
+        image_level = 0
+
+    if 'offset_x' in run_parameters:
+        offset_x = run_parameters['offset_x']
+    else:
+        offset_x = 0
+
+    if 'offset_y' in run_parameters:
+        offset_y = run_parameters['offset_y']
+    else:
+        offset_y = 0
+
+    if 'patch_stride_fraction' in run_parameters:
+        patch_stride = run_parameters['patch_stride_fraction']
+    else:
+        patch_stride = 1.0
+
+    if 'wsi_floatname' in run_parameters:
+        os_im_2_obj = openslide.OpenSlide(run_parameters['wsi_floatname'])
+        arry_2_x_lngth, arry_2_y_lngth = os_im_2_obj.level_dimensions[image_level]
+        os_im_2_obj.close()
+    else:
+        arry_2_x_lngth = None
+        arry_2_y_lngth = None
+
+    #       assure minimum stride s.t. arrays advance by at least MIN_STRIDE_PIXELS
+    patch_stride = max(patch_stride, (MIN_STRIDE_PIXELS / min(patch_width, patch_height) ) )
+
+    #                     OpenSlide Open                      #
+    os_im_obj = openslide.OpenSlide(wsi_filename)
+
+    #       guard image level off by one
+    image_level = min(image_level, os_im_obj.level_count - 1)
+
+    obj_level_diminsions = os_im_obj.level_dimensions
+    obj_level_downsample = os_im_obj.level_downsamples[image_level]
+
+    #       adjust offset to this scale for location arrays start - end
+    offset_y = int(offset_y / obj_level_downsample)
+    offset_x = int(offset_x / obj_level_downsample)
+
+    #       get the start, stop locations list for the rows     -- Scaled to image_level
+    pixels_height = obj_level_diminsions[image_level][1]
+    row_start, row_end = get_offset_array_start_and_end(pixels_height, offset_y, arry_2_y_lngth)
+    rows_fence_array = get_strided_fence_array(patch_height, patch_stride, row_start, row_end)
+
+    #       get the start, stop locations list for the columns  -- Scaled to image_level
+    pixels_width = obj_level_diminsions[image_level][0]
+    col_start, col_end = get_offset_array_start_and_end(pixels_width, offset_x, arry_2_x_lngth)
+    cols_fence_array = get_strided_fence_array(patch_width, patch_stride, col_start, col_end)
+
+    #       get a thumbnail image for the patch select method   -- Scaled to image_level / thumbnail_divisor
+    thumbnail_size = (int(pixels_width // thumbnail_divisor),
+                      int(pixels_height // thumbnail_divisor))
+
+    #       thumb scale on full size image
+    small_im = os_im_obj.get_thumbnail(thumbnail_size)
+    os_im_obj.close()
+    #                     OpenSlide Close                      #
+
+    #       package the return dictionary
+    strided_patches_dict = {'small_im': small_im,
+                            'cols_fence_array': cols_fence_array,
+                            'rows_fence_array': rows_fence_array,
+                            'thumbnail_divisor': thumbnail_divisor}
+
+    return strided_patches_dict
+
 def get_patch_location_array_for_image_level(run_parameters):
     """ Usage: patch_location_array = get_patch_location_array_for_image_level(run_parameters)
         using 'patch_select_method", find all upper left corner locations of patches
@@ -307,49 +501,30 @@ def get_patch_location_array_for_image_level(run_parameters):
                                 threshold:              minimimum sum of thresholded image (default = 0)
                                 image_level:            openslide image pyramid level 0,1,2,...
     Returns:
-        patch_location_array
+        patch_location_array:   [[x, y], [x, y],... ]   n_pairs x 2 numpy array
 
     """
     #                   initialize an empty return value
     patch_location_array = []
     #                   name the input variables
-    wsi_filename = run_parameters['wsi_filename']
-    thumbnail_divisor = run_parameters['thumbnail_divisor']
     patch_select_method = run_parameters['patch_select_method']
-    patch_height = run_parameters['patch_height']
-    patch_width = run_parameters['patch_width']
+
     #                   set defaults for newly added parameters
     if 'threshold' in run_parameters:
         threshold = run_parameters['threshold']
     else:
         threshold = 0
 
-    if 'image_level' in run_parameters:
-        image_level = run_parameters['image_level']
-    else:
-        image_level = 0
-
-    #                     OpenSlide open                      #
-    os_im_obj = openslide.OpenSlide(wsi_filename)
-    obj_level_diminsions = os_im_obj.level_dimensions
-
-    #                   get the start, stop locations list for the rows
-    pixels_height = obj_level_diminsions[image_level][1]
-    rows_fence_array = get_fence_array(patch_length=patch_height, overall_length=pixels_height)
-
-    #                   get the start, stop locations list for the columns
-    pixels_width = obj_level_diminsions[image_level][0]
-    cols_fence_array = get_fence_array(patch_length=patch_width, overall_length=pixels_width)
-
-    #                   get a thumbnail image for the patch select method
-    thumbnail_size = (pixels_width // thumbnail_divisor, pixels_height // thumbnail_divisor)
-    small_im = os_im_obj.get_thumbnail(thumbnail_size)
-    os_im_obj.close()
-    #                     OpenSlide close                     #
+    strided_patches_dict = get_strided_patches_dict_for_image_level(run_parameters)
+    small_im = strided_patches_dict['small_im']
+    cols_fence_array = strided_patches_dict['cols_fence_array']
+    rows_fence_array = strided_patches_dict['rows_fence_array']
+    thumbnail_divisor = strided_patches_dict['thumbnail_divisor']
 
     #                   get the binary mask as a measure of image region content
-    mask_im = get_sample_selection_mask(small_im, patch_select_method)
+    mask_im = get_sample_selection_mask(small_im, patch_select_method).astype(np.int)
 
+    #                                       Rescale Fence Arrays to thumbnail image
     #                   iterator for rows:  (top_row, bottom_row, full_scale_row_number)
     it_rows = zip(rows_fence_array[:, 0] // thumbnail_divisor,
                   rows_fence_array[:, 1] // thumbnail_divisor,
@@ -366,12 +541,12 @@ def get_patch_location_array_for_image_level(run_parameters):
 
         for tmb_col_lft, tmb_col_rgt, col_n in it_cols:
 
-            #           if the sum of the mask elements is larger than the threshold...
             if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > threshold:
 
                 #       add the full scale row and column of the upper left corner to the list
-                patch_location_array.append((row_n, col_n))
+                patch_location_array.append((col_n, row_n))
 
+    #                   patch locations at image_level scale   [(x, y), (x, y),...]     -- Scaled to image_level
     return patch_location_array
 
 """
@@ -383,7 +558,11 @@ class PatchImageGenerator():
     General case patch image generator for openslide Whole Slide Image file types
 
     Usage:  patch_image_generator = PatchImageGenerator(run_parameters)
-            patch_dict = patch_image_generator.next_patch()
+            try:
+                patch_dict = patch_image_generator.next_patch()
+            execpt StopIteration:
+                # catch StopIterationError - no action required except pass
+                pass
 
     Args:
         run_parameters:         (with these keys)
@@ -404,33 +583,57 @@ class PatchImageGenerator():
     """
 
     def __init__(self, run_parameters):
-        self.os_obj = openslide.OpenSlide(run_parameters['wsi_filename'])
+        #                       image_level_loc_array  = [(row, col), (row, col),...]     -- Scaled to image_level
+        self.image_level_loc_array = get_patch_location_array_for_image_level(run_parameters)
+
+        #                       image_level determines scale, patch width and height are fixed
         self.image_level = run_parameters['image_level']
         self.patch_size = (run_parameters['patch_width'], run_parameters['patch_height'])
+
+        #                       assign inputs, Open the file
+        self.os_obj = openslide.OpenSlide(run_parameters['wsi_filename'])
+
+        #                       get the scale multiplier
         _multi_ = self.os_obj.level_downsamples[self.image_level]
-        self.image_level_loc_array = get_patch_location_array_for_image_level(run_parameters)
+
+        #                       rescale to image full size :
         self.level_0_location_array = [(int(p[0] * _multi_), int(p[1] * _multi_)) for p in self.image_level_loc_array]
+
+        #                       size of the iteration and initialize for +1 opening index of 0
         self._number_of_patches = len(self.image_level_loc_array)
         self._patch_number = -1
 
     def __del__(self):
+        #                       just before exit, Close the file
         self.os_obj.close()
 
     def next_patch(self):
-        self._patch_number += 1
-        if self._patch_number < self._number_of_patches:
-            patch_dict = {'patch_number': self._patch_number}
-            patch_dict['image_level_x'] = self.image_level_loc_array[self._patch_number][1]
-            patch_dict['image_level_y'] = self.image_level_loc_array[self._patch_number][0]
-            patch_dict['level_0_x'] = self.level_0_location_array[self._patch_number][1]
-            patch_dict['level_0_y'] = self.level_0_location_array[self._patch_number][0]
 
+        #                       initialized to -1, opens as 0 ends as number of patches -1 (as zero-indexing should)
+        self._patch_number += 1
+
+        #                       ( for every patch )
+        if self._patch_number < self._number_of_patches:
+
+            #                   iteration number
+            patch_dict = {'patch_number': self._patch_number}
+
+            #                   insert the next image_level scaled x and y into the return dictionary
+            patch_dict['image_level_x'] = self.image_level_loc_array[self._patch_number][0]
+            patch_dict['image_level_y'] = self.image_level_loc_array[self._patch_number][1]
+
+            #                   insert the full scale location x, y in return dict and the location tuple
+            patch_dict['level_0_x'] = self.level_0_location_array[self._patch_number][0]
+            patch_dict['level_0_y'] = self.level_0_location_array[self._patch_number][1]
             location = (patch_dict['level_0_x'], patch_dict['level_0_y'])
+
+            #                   read the patch_sized image at the loaction and insert it in the return dict
             patch_dict['patch_image'] = self.os_obj.read_region(location, self.image_level, self.patch_size)
 
             return patch_dict
 
         else:
+            #                   This is standard practice for python generators -
             raise StopIteration()
 
 """ Input conditioning """
@@ -494,7 +697,12 @@ def patch_name_parts_clean_with_warning(file_name_base, class_label):
 
     return name_base_clean, class_label_clean
 
-""" Use Case 1 """
+"""                         Use Case 1 
+
+        Givin a WSI (Whole Slide Image) and a label, export patches into TFRecords or Folders (raw images).
+        
+        
+"""
 
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -594,10 +802,8 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     _, file_name_base = os.path.split(run_parameters['wsi_filename'])
     file_name_base, _ = os.path.splitext(file_name_base)
     class_label = run_parameters['class_label']
-    h = run_parameters['patch_height']
-    w = run_parameters['patch_width']
-    class_label = run_parameters['class_label']
     output_dir = run_parameters['output_dir']
+
     if 'file_ext' in run_parameters:
         file_ext = run_parameters['file_ext']
     else:
@@ -610,7 +816,7 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     tfrecord_file_name = file_name_base + '.tfrecords'
     tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
 
-    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user that input parameter changed
+    # sanitize case_id, class_label and file_ext so that they may be decoded - warns user if input parameter changed
     file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
     patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
 
@@ -656,6 +862,7 @@ def wsi_file_to_patches_tfrecord(run_parameters):
 
     return tfrecord_file_name
 
+
 def run_imfile_to_tfrecord(run_parameters):
     """ read the run_parameters dictionary & execute function: svs_file_to_patches_tfrecord with those
 
@@ -681,7 +888,226 @@ def run_imfile_to_tfrecord(run_parameters):
         if size > 0:
             print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
 
-""" Use Case 4 """
+"""                             Use Case 2
+
+        Givin a WSI (Whole Slide Image) and an Annotation File, export patches into TFRecords.
+        
+        1.  Annotation File must follow QuPath Annotation convention
+        2.  Requires dictionary for class labels 
+"""
+
+def run_annotation(run_parameters):
+    """
+
+    Args:       run_parameters:
+                    run_directory
+    """
+    print('running annotation')
+    if len(run_parameters) > 0:
+        for k, v in run_parameters.items():
+            print('%25s: %s'%(k,v))
+
+
+    pass
+
+
+"""                             Use Case 3 
+
+        Givin a WSI and another WSI, do image registration, export pair of patches into TFRecords.
+        
+        One Whole Slide Image will be 'fixed' and the other WSI will be the 'float' image.
+"""
+
+
+def run_registration_pairs(run_parameters):
+    """ Usage:  registration_pair_to_directory(run_parameters)
+
+    Args:       run_parameters
+                    method              one of - [registration_to_dir, registration_to_tfrecord]
+                    wsi_filename        'fixed' image
+                    wsi_floatname       'float' image
+                    offset_data_file    csv with (truth_offset_x, truth_offset_y)
+                    patch_width         pixels width of patch selection
+                    patch_height        pixels height of patch selection
+                    image_level         openslide pyramid image level 0, 1, ...
+                    class_label         label for train-test
+                    output_dir          where the patches or tfrecord will be wtitten
+                (optional run_parameters)
+                    file_ext            .jpg is default, and only one implemented for tensorflow in this version
+                                        (note that .png is much better compression but much, much slower)
+
+    Returns:
+        (nothing)   writes image files or tfrecord depending on run_parameters['method'] input
+
+    """
+    method = run_parameters['method']
+    # insert the offset into the run_parmaters:
+    if os.path.isfile(run_parameters['offset_data_file']):
+        offset_df = pd.read_csv(run_parameters['offset_data_file'])
+
+        offset_x = int(round(offset_df['truth_offset_x'].iloc[0]))
+        offset_y = int(round(offset_df['truth_offset_y'].iloc[0]))
+
+        run_parameters['offset_x'] = offset_x
+        run_parameters['offset_y'] = offset_y
+        run_parameters['float_offset_x'] = -1 * offset_x
+        run_parameters['float_offset_y'] = -1 * offset_y
+
+    # form named parameters
+    patch_size = (run_parameters['patch_width'], run_parameters['patch_height'])
+
+    float_offset_x = run_parameters['float_offset_x']
+    float_offset_y = run_parameters['float_offset_y']
+
+    image_level = run_parameters['image_level']
+
+    image_file_name = run_parameters['wsi_filename']
+
+    if os.path.isfile(image_file_name) == False:
+        print('\n\n\tFile not found:\n\t%s\n\n' % (image_file_name))
+        return
+
+    output_dir = run_parameters['output_dir']
+    class_label = run_parameters['class_label']
+
+    if 'file_ext' in run_parameters:
+        file_ext = run_parameters['file_ext']
+        if file_ext[0] != '.':
+            file_ext = '.' + file_ext
+    else:
+        file_ext = '.jpg'
+
+    # check / ceate the output directory
+    if os.path.isdir(output_dir) == False:
+        print('creating output directory:\n%s\n' % (output_dir))
+        os.makedirs(output_dir)
+
+    # prepare name generation dictionary
+    _, file_name_base = os.path.split(image_file_name)
+    file_name_base, _ = os.path.splitext(file_name_base)
+
+    # sanitize case_id, class_label & file_ext so that they may be decoded - warns user if parameter changes
+    file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
+
+    patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
+
+    # get the patch image generator
+    fixed_im_generator = PatchImageGenerator(run_parameters)
+
+    # Open the float image
+    wsi_float_obj = openslide.OpenSlide(run_parameters['wsi_floatname'])
+    X, Y = wsi_float_obj.dimensions
+    X_dim = (0, X)
+    Y_dim = (0, Y)
+
+    if method == 'registration_to_dir':
+        stop_teration = False
+        patch_dict = fixed_im_generator.next_patch()
+        patch_number = -2
+        while stop_teration == False:
+            # form the patch filename
+            patch_image_name_dict['location_x'] = patch_dict['image_level_x']
+            patch_image_name_dict['location_y'] = patch_dict['image_level_y']
+            patch_name = dict_to_patch_name(patch_image_name_dict)
+            patch_full_name = os.path.join(output_dir, patch_name)
+
+            # get the full-scale image location of the patch
+            x1 = patch_dict['level_0_x'] + float_offset_x
+            y1 = patch_dict['level_0_y'] + float_offset_y
+
+            # define the patch full boundry
+            x_b = [x1, x1 + patch_size[0]]
+            y_b = [y1, y1 + patch_size[1]]
+
+            # check bounds, get float image, write the pair
+            if check_patch_in_bounds(x_b, y_b, X_dim, Y_dim) == True:
+                flot_im = wsi_float_obj.read_region((x1, y1), image_level, patch_size)
+                im_pair = im_pair_hori(patch_dict['patch_image'], flot_im)
+
+                # write the file
+                im_pair.convert('RGB').save(patch_full_name)
+
+            try:
+                patch_dict = fixed_im_generator.next_patch()
+                patch_number = patch_dict['patch_number']
+            except:
+                print('%i images written' % (patch_number - 2))
+                stop_teration = True
+                pass
+
+    elif method == 'registration_to_tfrecord':
+            tfrecord_file_name = file_name_base + '.tfrecords'
+            tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
+
+            with tf_io.TFRecordWriter(tfrecord_file_name) as writer:
+                seq_number = 0
+                while True:
+                    try:
+                        patch_dict = fixed_im_generator.next_patch()
+                        patch_image_name_dict['location_x'] = patch_dict['image_level_x']
+                        patch_image_name_dict['location_y'] = patch_dict['image_level_y']
+                        patch_name = dict_to_patch_name(patch_image_name_dict)
+
+                        # get the full-scale image location of the patch
+                        x1 = patch_dict['level_0_x'] + float_offset_x
+                        y1 = patch_dict['level_0_y'] + float_offset_y
+
+                        # define the patch full boundry
+                        x_b = [x1, x1 + patch_size[0]]
+                        y_b = [y1, y1 + patch_size[1]]
+
+                        # check bounds, get float image, write the pair
+                        if check_patch_in_bounds(x_b, y_b, X_dim, Y_dim) == True:
+                            flot_im = wsi_float_obj.read_region((x1, y1), image_level, patch_size)
+                            im_pair = im_pair_hori(patch_dict['patch_image'], flot_im)
+                            image_string = im_pair.convert('RGB')
+
+                            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                            try:
+                                image_string.save(tmp.name)
+                                image_string = open(tmp.name, 'rb').read()
+
+                            except:
+                                print('Image write-read exception with patch # %i, named:\n%s' % (seq_number, patch_name))
+                                pass
+
+                            finally:
+                                os.unlink(tmp.name)
+                                tmp.close()
+
+                            tf_example_obj = tf_imp_dict(image_string,
+                                                         label=seq_number,
+                                                         image_name=bytes(patch_name, 'utf8'),
+                                                         class_label=bytes(class_label, 'utf8'))
+
+                            writer.write(tf_example_obj.SerializeToString())
+                            seq_number += 1
+
+                    except StopIteration:
+                        print('%5i images written to %s' % (seq_number, tfrecord_file_name))
+                        break
+
+            if os.path.isfile(tfrecord_file_name):
+                (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(tfrecord_file_name)
+                if size > 0:
+                    print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
+
+
+    # Close the float image
+    try:
+        del fixed_im_generator
+        wsi_float_obj.close()
+    except:
+        pass
+
+
+
+"""                             Use Case 4 
+
+        Givin a WSI & TFRecord, generate a masked Thumbnail 
+        
+        (graphic representation of the WSI in the TFRecord)
+"""
 
 def image_file_to_patches_directory_for_image_level(run_parameters):
     """ Usage: image_file_to_patches_directory_for_image_level(run_parameters)
@@ -781,6 +1207,7 @@ def write_tfrecord_marked_thumbnail_image(run_parameters):
     thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
     thumb_preview.save(output_file_name)
     print('tfrecord thumnail preview saved to:', output_file_name)
+
 
 def tf_record_to_marked_thumbnail_image(run_parameters):
     """ Usage: thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
@@ -925,7 +1352,7 @@ def get_patch_locations_preview_imagefor_image_level(run_parameters):
     patch_location_array = get_patch_location_array_for_image_level(run_parameters)
 
     #                   draw the rectangles on the thumb_preview image
-    for r, c in patch_location_array[:]:
+    for c, r in patch_location_array[:]:
         #               upper left corner = scaled column & row location of patch on thumbnail image
         ulc = (c // thumbnail_divisor, r // thumbnail_divisor)
         #               lower right corner = upper left corner + scaled patch size

@@ -37,3 +37,8 @@ rgb2lab_threshold:      80
 
 # threshold:            default is  0 - (image detail & patch size dependent)
 threshold:              0
+
+patch_stride_fraction:  1.0
+
+offset_x:               0
+offset_y:               0
