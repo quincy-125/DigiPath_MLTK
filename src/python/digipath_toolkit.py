@@ -406,16 +406,10 @@ def get_strided_patches_dict_for_image_level(run_parameters):
     """
     wsi_filename = run_parameters['wsi_filename']
     thumbnail_divisor = run_parameters['thumbnail_divisor']
-    patch_select_method = run_parameters['patch_select_method']
     patch_height = run_parameters['patch_height']
     patch_width = run_parameters['patch_width']
 
     #                   set defaults for newly added parameters
-    if 'threshold' in run_parameters:
-        threshold = run_parameters['threshold']
-    else:
-        threshold = 0
-
     if 'image_level' in run_parameters:
         image_level = run_parameters['image_level']
     else:
