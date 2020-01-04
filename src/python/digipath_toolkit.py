@@ -509,6 +509,7 @@ def get_patch_location_array_for_image_level(run_parameters):
     else:
         threshold = 0
 
+    #                   full scale patch locations for the selection image & thumbnail_divisor scale
     strided_patches_dict = get_strided_patches_dict_for_image_level(run_parameters)
     small_im = strided_patches_dict['small_im']
     cols_fence_array = strided_patches_dict['cols_fence_array']
@@ -518,13 +519,13 @@ def get_patch_location_array_for_image_level(run_parameters):
     #                   get the binary mask as a measure of image region content
     mask_im = get_sample_selection_mask(small_im, patch_select_method).astype(np.int)
 
-    #                                       Rescale Fence Arrays to thumbnail image
+    #                                       zip & rescale Fence Arrays to mask image size
     #                   iterator for rows:  (top_row, bottom_row, full_scale_row_number)
     it_rows = zip(rows_fence_array[:, 0] // thumbnail_divisor,
                   rows_fence_array[:, 1] // thumbnail_divisor,
                   rows_fence_array[:, 0])
 
-    #                   variables for columns iterator
+    #                   loop variables for iterator for cols
     lft_cols = cols_fence_array[:, 0] // thumbnail_divisor
     rgt_cols = cols_fence_array[:, 1] // thumbnail_divisor
     cols_array = cols_fence_array[:, 0]
@@ -535,9 +536,10 @@ def get_patch_location_array_for_image_level(run_parameters):
 
         for tmb_col_lft, tmb_col_rgt, col_n in it_cols:
 
+            #           select this patch if the selected patch pixels add to more than threshold (default = 0)
             if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > threshold:
 
-                #       add the full scale row and column of the upper left corner to the list
+                #       add the image level scale row and column of the upper left corner to the list
                 patch_location_array.append((col_n, row_n))
 
     #                   patch locations at image_level scale   [(x, y), (x, y),...]     -- Scaled to image_level
@@ -1062,7 +1064,7 @@ def run_registration_pairs(run_parameters):
                                 image_string = open(tmp.name, 'rb').read()
 
                             except:
-                                print('Image write-read exception with patch # %i, named:\n%s' % (seq_number, patch_name))
+                                print('Image write-read exception at patch: %i, named:\n%s'%(seq_number, patch_name))
                                 pass
 
                             finally:
@@ -1145,7 +1147,7 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
     _, file_name_base = os.path.split(image_file_name)
     file_name_base, _ = os.path.splitext(file_name_base)
 
-    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user that input parameter changed
+    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user input parameter changed
     file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
 
     patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
@@ -1278,9 +1280,9 @@ def tf_record_to_marked_thumbnail_image(run_parameters):
     return thumb_preview
 
 
-def get_patch_locations_preview_imagefor_image_level(run_parameters):
+def get_patch_locations_preview_image_for_image_level(run_parameters):
     """ Usage:
-    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_imagefor_image_level(run_parameters)
+    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_image_for_image_level(run_parameters)
 
     create viewable images to show patch locations
 
@@ -1380,7 +1382,7 @@ def write_mask_preview_set(run_parameters):
     wsi_file_base, _ = os.path.splitext(wsi_file_base)
 
     #               get the two images and the location array
-    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_imagefor_image_level(run_parameters)
+    mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_image_for_image_level(run_parameters)
 
     #               name and write the thumb_preview image
     thumb_preview_filename = os.path.join(output_dir, wsi_file_base + 'marked_thumb.jpg')
