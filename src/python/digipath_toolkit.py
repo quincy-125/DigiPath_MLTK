@@ -373,7 +373,7 @@ def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
     fence_stride = max(int(np.abs(patch_len * patch_stride)), 1)
 
     #                   pre-allocate a max number-of-patches by 2 numpy array
-    array_size = np.abs(arr_end - arr_start) // fence_stride
+    array_size = (np.abs(arr_end - arr_start) / fence_stride).astype(np.int)
     fence_array = np.zeros((array_size, 2)).astype(np.int)
 
     #                   initialize the first location and a fence_array index
