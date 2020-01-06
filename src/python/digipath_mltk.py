@@ -27,8 +27,8 @@ def registration_functions(run_parameters):
     run_registration_pairs(run_parameters)
 
 def annotation_functions(run_parameters):
-    from digipath_toolkit import run_annotation
-    run_annotation(run_parameters)
+    from digipath_toolkit import run_annotated_patches
+    run_annotated_patches(run_parameters)
 
 SELECT = {"image_2_tfrecord": image_2_tfrecord,
           "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb,

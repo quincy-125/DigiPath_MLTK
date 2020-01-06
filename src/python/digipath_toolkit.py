@@ -892,19 +892,559 @@ def run_imfile_to_tfrecord(run_parameters):
         2.  Requires dictionary for class labels 
 """
 
-def run_annotation(run_parameters):
+MINIMUM_THUMB_PATCH_DIM = 2
+
+
+def get_priority_ordered_labels(label_id_priority_fname):
+    """ ordered_priority_dict = get_priority_ordered_labels(label_id_priority_fname)
+    read the input .csv file into a priority dictionary struct
+
+    Args:
+        label_id_priority_fname:    with Header = Label, ID, Priority
+
+    Returns:
+        ordered_priority_dict:      {priority_number: {'label': label_str, 'ID': str_number}}
+                                    sorted with largest priority number first
     """
+    # create the ordered_priority_dict for return, and a id_priority reverse dict 4 lookups
+    priority_tuples_list = []
 
-    Args:       run_parameters:
-                    run_directory
+    # read the file
+    lines = ''
+    try:
+        with open(label_id_priority_fname, 'r') as fh:
+            lines = fh.readlines()
+    except:
+        print('failed opening: ', label_id_priority_fname)
+        lines = ''
+        pass
+
+    # read the .csv lines into the dict   Header = Label, ID, Priority
+    if len(lines) > 0:
+        for line in lines:
+            ln_list = line.strip().split(',')
+            if len(ln_list) > 1 and ln_list[0] != 'Label':
+                #                   Fix name clash: .xml "Id" vs .csv "ID" - Renaming csv-ID as label_ID
+                # tuple:                    (    priority,     {label: label_name,     ID: ID_number}    )
+                priority_tuples_list.append((int(ln_list[2]), {'label': ln_list[0], 'label_ID': ln_list[1]}))
+
+    return OrderedDict(sorted(priority_tuples_list, reverse=True))
+
+
+def get_ordered_priority_label_coords_dict(xml_file_name, label_id_priority_fname):
+    """ Usage:
+    priority_dict = get_ordered_priority_label_coords_dict(xml_file_name, label_id_priority_fname)
+    parse an xml file for key fields needed for annotation selection of images
+
+    Args:
+        xml_file_name:              QuPath Annotation convention xml file
+        label_id_priority_fname:    with columns Label, Id, Priority
+
+    Returns:
+        priority_dict:              python dict of dicts - with priority numbers as ordered keys,
+                                        values are python dicts with:
+                                            label:  Text
+                                            Text:   label
+                                            coords: vertices as numpy (n x 2) array [[x, y], [x, y],...]
+                                            ID:     region Id number - depreciated - defined by label
+
     """
-    print('running annotation')
-    if len(run_parameters) > 0:
-        for k, v in run_parameters.items():
-            print('%25s: %s'%(k,v))
+    # define which region keys to include
+    REGION_KEYS = {'Id': 'int', 'Text': 'str', }
+    # REGION_KEYS =  {'Id': 'int', 'Text': 'str', 'Zoom': 'float', 'Analyze': 'bool'}
+    INT_BOOL_DICT = {1: True, 0: False}
+
+    # module call:          get the {priority: {label: l, ID: n}
+    ordered_priority_dict = get_priority_ordered_labels(label_id_priority_fname)
+
+    # read the file into text
+    with open(xml_file_name, 'r') as fh:
+        lines = fh.readlines()
+
+    if len(lines) == 0 or ordered_priority_dict is None:
+        print('\n\n\t\t\tThrow_A_Pythonic_Conniption_Fit')
+        print('\t\t\tFail to read: ', xml_file_name, '\n\n')
+        return ordered_priority_dict
+
+    # create the reverse dict  { label:    priority}
+    label_ID_Priority_dict = {v['label']: k for k, v in ordered_priority_dict.items()}
+
+    # initialize region-vertex loop region-coords loop cycle variables
+    reg_on = False
+    v_on = False
+    vertex_list = []
+    region_dict = {}
+
+    for line in lines:
+        # region-vertex loop: skip to bottom of loop first, work back up as conditions found
+        #       finds "Region", fills in keys, moves up-loop,
+        #       finds "Vertex" collects all "Vertex" tags,
+        #       takes this first if ... when end of Vertices is found
+        #       fills "priority" defined .csv (reverse dict label_ID_Priority_dict)
+        if reg_on == True and v_on == True and line.strip() == '</Vertices>':
+
+            # end of region - add region_dict to ordered_priority_dict if coords found
+            if 'Text' in region_dict and region_dict['Text'] in label_ID_Priority_dict and len(vertex_list) > 1:
+                # priority - .csv reverse dict {label: priority} with label=="Text" found in xml
+                priority = label_ID_Priority_dict[region_dict['Text']]
+                for k in REGION_KEYS.keys():
+                    if k in region_dict:
+                        ordered_priority_dict[priority][k] = region_dict[k]
+                ordered_priority_dict[priority]['vertices'] = np.array(vertex_list)
+
+            else:
+                #                                                       Throw Warning | Error Here?
+                print('\n\n\t\t\tThrow_A_Pythonic_Conniption_Fit')
+                print('\nlen(vertex_list)', len(vertex_list), '\nregion_dict\n', region_dict, '\n\n')
+
+            # restart region-vertex loop: reset all region-coords loop cycle variables
+            reg_on = False
+            v_on = False
+            vertex_list = []
+            region_dict = {}
+
+        elif reg_on == True and v_on == True and '<Vertex' in line.strip()[0:7]:
+            # append every <vertex> in <Vertices> to the list of coords
+
+            # remove the xml markup and split on empty space, find & insert the X=..., Y=... elements
+            vertex_line_list = line.strip().strip('<').strip('>').strip('/').split()  # .split(' ')
+            xy_dict = {}
+            # find
+            for v in vertex_line_list:
+                if v[0] == 'X':
+                    kv_pair = v.split('=')
+                    xy_dict['X'] = float(kv_pair[1].strip('"'))
+
+                elif v[0] == 'Y':
+                    kv_pair = v.split('=')
+                    xy_dict['Y'] = float(kv_pair[1].strip('"'))
+
+            # insert in vertex list
+            if 'X' in xy_dict and 'Y' in xy_dict:
+                vertex_list.append([xy_dict['X'], xy_dict['Y']])
+
+        if reg_on == True and '<Vertices' in line:
+            # set to begin parsing Vertex lines
+            v_on = True
+
+        if reg_on == False and '<Region ' in line.strip()[0:8]:
+            #                       begin parsing the new region
+            reg_on = True
+            v_on = False  # (with paranoia)
+            region_dict = {}
+
+            # parse this line ( <Region ) to get find key-value pairs named in REGION_KEYS
+            region_list = line.strip().split()
+            for reg_item in region_list:
+                if '=' in reg_item:
+                    # split into a key-value pair
+                    item_list = reg_item.strip().split('=')
+                    if len(item_list) == 2:
+                        for k in REGION_KEYS:
+                            # insert key-value pair if key is defined above in REGION_KEYS
+                            if k in item_list[0][0:len(k)]:
+                                if REGION_KEYS[k] == 'int':
+                                    region_dict[k] = int(item_list[1].strip('"'))
+                                elif REGION_KEYS[k] == 'float':
+                                    region_dict[k] = float(item_list[1].strip('"'))
+                                elif REGION_KEYS[k] == 'bool':
+                                    region_dict[k] = INT_BOOL_DICT[int(item_list[1].strip('"'))]
+                                else:
+                                    region_dict[k] = item_list[1].strip('"')
+
+    return ordered_priority_dict
 
 
-    pass
+def get_select_bounds_from_mask(mask_mat, xy):
+    """ Usage: start_stop_dict = get_select_bounds_from_mask(mask_mat, xy='x')
+    find the first and last unmasked row (y) or col (x) in the mask image input mask_mat
+
+    Args:
+        mask_mat:           2d numpy binary array
+        xy:                 character x for x axis or y for y axis
+
+    Returns:
+        start_stop_dict:    {xy+'_start': _start_, xy+'_end': _stop_}
+
+    """
+    # initialize
+    _start_ = None
+    _stop_ = None
+
+    # translate input variables
+    if xy == 'x':
+        axis = 1
+
+    elif xy == 'y':
+        axis = 0
+
+    # sum of axis: sum_of_rows is x, axis=1,
+    sum_of_axis = mask_mat.sum(axis=axis)
+    current_greater_than = 0
+    for k in range(sum_of_axis.size):
+        if sum_of_axis[k] > 0:
+            current_greater_than = k
+            if _start_ is None:
+                _start_ = k
+
+    # set the last row if a first row one more were found to contain ones
+    if not _start_ is None and current_greater_than > _start_:
+        _stop_ = current_greater_than
+
+    # cover the all the way to the include all cases
+    if _start_ is None:
+        _start_ = 0
+
+    if _stop_ is None:
+        _stop_ = sum_of_axis.shape[0]  # k
+
+    return _start_, _stop_
+
+
+def get_region_mask(region_coords, thumbnail_divisor, thumbnail_size):  # image_dimensions):
+    """ mask_im, img = get_region_mask(region_coords, thumbnail_divisor,image_dimensions)
+    fabricate a numpy array image mask for thumbnail size with region coords (vertices)
+    Args:
+    Returns:
+    """
+    # scale the region coords tuple with the thumbnail_divisor as type int
+    xy_list = (region_coords / thumbnail_divisor).astype(np.int).tolist()
+    xy_list = [(p[1], p[0]) for p in xy_list]
+
+    img = Image.fromarray(np.zeros((thumbnail_size[1], thumbnail_size[0])).astype(np.uint8))
+
+    # make it a Pillow Draw and draw the polygon from the list of (x,y) tuples
+    draw = ImageDraw.Draw(img)
+    draw.polygon(xy_list, fill="white")
+
+    # create the logical mask for patch selection in the return variable
+    return np.array(img) > 0
+
+
+def get_priority_location_arrays_dict(run_parameters):
+    """ priority_loc_array_dict = get_priority_location_arrays_dict(run_parameters)
+    """
+    #                                                           define the return variable
+    priority_loc_array_dict = defaultdict(dict)
+
+    #                                                           assign local names
+    wsi_filename = run_parameters['wsi_filename']
+    csv_file_name = run_parameters['csv_file_name']
+    xml_file_name = run_parameters['xml_file_name']
+    patch_select_method = run_parameters['patch_select_method']
+
+    image_level = run_parameters['image_level']
+
+    thumbnail_divisor = run_parameters['thumbnail_divisor']
+
+    patch_height = run_parameters['patch_height']
+    patch_width = run_parameters['patch_width']
+    thumb_patch_height = max(MINIMUM_THUMB_PATCH_DIM, patch_height // thumbnail_divisor)
+    thumb_patch_width = max(MINIMUM_THUMB_PATCH_DIM, patch_width // thumbnail_divisor)
+
+    threshold = run_parameters['threshold']
+
+    if 'patch_stride_fraction' in run_parameters:
+        patch_stride = run_parameters['patch_stride_fraction']
+    else:
+        patch_stride = 1.0
+
+    #                           Open image file
+    os_im_obj = openslide.OpenSlide(wsi_filename)
+    #                           Get scale calculation necessities, and thumbnail image
+    image_dimensions = os_im_obj.dimensions
+    level_downsample = os_im_obj.level_downsamples[image_level]
+    thumbnail_size = (image_dimensions[0] // thumbnail_divisor, image_dimensions[1] // thumbnail_divisor)
+    thumbnail_image = os_im_obj.get_thumbnail(thumbnail_size)
+
+    #                           Guard openslide.get_thumbnail misbehavior - really - it may be off by one!
+    thumbnail_size = thumbnail_image.size
+
+    #                           Close image file
+    os_im_obj.close()
+
+    #                           Get initial mask by pre-annotation methods
+    mask_im = get_sample_selection_mask(thumbnail_image, patch_select_method, run_parameters=None)
+
+    #                           Read the xml and csv files into priorities: coordinates & co dict
+    priority_dict = get_ordered_priority_label_coords_dict(xml_file_name, csv_file_name)
+    for p, p_dict in priority_dict.items():
+
+        p_dict['level_downsample'] = level_downsample
+        label = p_dict['label']
+
+        this_mask = get_region_mask(p_dict['vertices'], thumbnail_divisor, thumbnail_size)
+        mask_im = np.logical_and(this_mask, mask_im)
+
+        if mask_im.sum() > 0:
+            patch_location_array = []
+
+            #                   patches search - limit to positive mask area
+            thumb_row_start, thumb_row_stop = get_select_bounds_from_mask(mask_im, 'y')
+            row_start, row_stop = thumb_row_start * thumbnail_divisor, thumb_row_stop * thumbnail_divisor
+
+            thumb_col_start, thumb_col_stop = get_select_bounds_from_mask(mask_im, 'x')
+            col_start, col_stop = thumb_col_start * thumbnail_divisor, thumb_col_stop * thumbnail_divisor
+
+            #                   get the rows for image level & rescale to full size wsi
+            # scale_patch_height = patch_height
+            rows_fence_array = get_strided_fence_array(patch_height, patch_stride,
+                                                       row_start // level_downsample,
+                                                       row_stop // level_downsample)
+            rows_fence_array = (rows_fence_array * level_downsample).astype(np.int)
+
+            #                   get the columns for image level & rescale to full size wsi
+            # scale_patch_width = patch_width
+            cols_fence_array = get_strided_fence_array(patch_width, patch_stride,
+                                                       col_start / level_downsample,
+                                                       col_stop / level_downsample)
+            cols_fence_array = (cols_fence_array * level_downsample).astype(np.int)
+
+            #       zip scaled Fence Arrays for rows & cols iterators
+            #                   iterator for rows:  (top_row, bottom_row, full_scale_row_number)
+            it_rows = zip(rows_fence_array[:, 0] // thumbnail_divisor,
+                          rows_fence_array[:, 1] // thumbnail_divisor,
+                          rows_fence_array[:, 0])
+
+            #                   variables to construct in-loop cols iterator:
+            lft_cols = cols_fence_array[:, 0] // thumbnail_divisor
+            rgt_cols = cols_fence_array[:, 1] // thumbnail_divisor
+            cols_array = cols_fence_array[:, 0]
+
+            for tmb_row_top, tmb_row_bot, row_n in it_rows:
+
+                #               iterator for cols:  (left_column, right_column, full_scale_column_number)
+                it_cols = zip(lft_cols, rgt_cols, cols_array)
+
+                for tmb_col_lft, tmb_col_rgt, col_n in it_cols:
+
+                    #           select patch if selected patch pixels sum to more than threshold (default=0)
+                    if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > threshold:
+                        #       add the image level scale row and column of the upper left corner to the list
+                        patch_location_array.append((col_n, row_n))
+
+            #                   add to return dict only if patches were found
+            if len(patch_location_array) > 0:
+                p_dict['patch_location_array'] = patch_location_array
+                priority_loc_array_dict[p] = p_dict
+
+    return priority_loc_array_dict
+
+
+class AnnotationPatchesGenerator():
+    def __init__(self, run_paramters):
+
+        self.image_level = int(run_parameters['image_level'])
+        self.patch_size = (int(run_parameters['patch_width']), int(run_parameters['patch_height']))
+        self.os_obj = openslide.OpenSlide(run_parameters['wsi_filename'])
+
+        self.plad_dict = get_priority_location_arrays_dict(run_parameters)
+        self.plad_key_list = list(self.plad_dict.keys())
+        self.plad_key = 0
+        if len(self.plad_dict) < 1:
+            self.stop_iteration = True
+            self.p_dict = {}
+            self.label = None
+            self.loc_arr = [[]]
+            self.p_idx = -1
+
+        else:
+            self.stop_iteration = False
+            self.p_dict = self.plad_dict[self.plad_key_list[self.plad_key]]
+            self.label = self.p_dict['label']
+            self.loc_arr = self.p_dict['patch_location_array']
+            self.p_idx = -1
+
+    def __del__(self):
+        self.os_obj.close()
+
+    def next_patch(self):
+
+        self.p_idx += 1
+
+        if self.p_idx < len(self.loc_arr) and self.stop_iteration == False:
+            patch_dict = {'label': self.label, 'patch_location': self.loc_arr[self.p_idx]}
+            location = (self.loc_arr[self.p_idx][0], self.loc_arr[self.p_idx][1])
+            patch_dict['patch_image'] = self.os_obj.read_region(location, self.image_level, self.patch_size)
+
+            return patch_dict
+
+        elif self.plad_key + 1 < len(self.plad_key_list) and self.stop_iteration == False:
+            self.plad_key = self.plad_key + 1
+            self.p_dict = self.plad_dict[self.plad_key_list[self.plad_key]]
+            self.label = self.p_dict['label']
+            self.loc_arr = self.p_dict['patch_location_array']
+
+            self.p_idx = 0
+            patch_dict = {'label': self.label, 'patch_location': self.loc_arr[self.p_idx]}
+
+            location = (self.loc_arr[self.p_idx][0], self.loc_arr[self.p_idx][1])
+            patch_dict['patch_image'] = self.os_obj.read_region(location, self.image_level, self.patch_size)
+
+            return patch_dict
+
+        else:
+            raise StopIteration()
+
+
+def verify_files_list(files_list):
+    """ files_not_found = verify_files_list(files_list)
+    """
+    files_not_found_list = []
+    for file_name in files_list:
+        if os.path.isfile(file_name) == False:
+            files_not_found_list.append(file_name)
+
+    return files_not_found_list
+
+
+def get_run_location_parameters_or_defaults(run_parameters):
+    """ Usage: location_parameters = get_run_location_parameters_or_defaults(run_parameters)
+    input data cleanup task
+    Args:
+        run_parameters:         required keys
+                                    wsi_filename
+                                    output_dir
+                                optional keys
+                                    class_label
+                                    file_ext
+    Returns:
+        location_parameters:    with keys
+                                    output_dir          created if non-existannt
+                                    file_name_base      wsi_filename wo path & extension (w posix cleanup)
+                                    class_label         default is empty str             (w posix cleanup)
+                                    file_ext            default is .jpg
+    """
+    location_parameters = {}
+
+    image_file_name = run_parameters['wsi_filename']
+    output_dir = run_parameters['output_dir']
+
+    if 'class_label' in run_parameters:
+        class_label = run_parameters['class_label']
+    else:
+        class_label = ''
+
+    if 'file_ext' in run_parameters:
+        file_ext = run_parameters['file_ext']
+        if file_ext[0] != '.':
+            file_ext = '.' + file_ext
+    else:
+        file_ext = '.jpg'
+
+    # check / ceate the output directory
+    if os.path.isdir(output_dir) == False:
+        print('creating output directory:\n%s\n' % (output_dir))
+        os.makedirs(output_dir)
+
+    # prepare name generation dictionary
+    _, file_name_base = os.path.split(image_file_name)
+    file_name_base, _ = os.path.splitext(file_name_base)
+
+    # sanitize case_id, class_label & file_ext so that they may be decoded - warns user if parameter changes
+    file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
+
+    # assign output parameters
+    location_parameters['output_dir'] = output_dir
+    location_parameters['file_ext'] = file_ext
+    location_parameters['class_label'] = class_label  # may be empty string
+    location_parameters['file_name_base'] = file_name_base
+
+    return location_parameters
+
+
+def run_annotated_patches(run_parameters):
+    """ Usage: _ = run_annotated_patches(run_parameters)
+    """
+    method = run_parameters['method']
+    wsi_filename = run_parameters['wsi_filename']
+    xml_file_name = run_parameters['xml_file_name']
+    csv_file_name = run_parameters['csv_file_name']
+
+    files_not_found = verify_files_list([wsi_filename, xml_file_name, csv_file_name])
+
+    if len(files_not_found) > 0:
+        for file_name in files_not_found:
+            print('Failed to find file:', file_name)
+        return None
+
+    location_parameters = get_run_location_parameters_or_defaults(run_parameters)
+    output_dir = location_parameters['output_dir']
+    file_ext = location_parameters['file_ext']
+    class_label = location_parameters['class_label']
+    file_name_base = location_parameters['file_name_base']
+
+    patch_image_name_dict = {'case_id': file_name_base, 'file_ext': file_ext}
+
+    patch_generator_obj = AnnotationPatchesGenerator(run_parameters)
+
+    if method == 'annotations_to_dir':
+        patch_number = -2
+        while True:
+            try:
+                patch_dict = patch_generator_obj.next_patch()
+                if len(class_label) > 0:
+                    patch_image_name_dict['class_label'] = class_label + '_' + patch_dict['label']
+                else:
+                    patch_image_name_dict['class_label'] = patch_dict['label']
+                patch_image_name_dict['location_x'] = patch_dict['patch_location'][0]
+                patch_image_name_dict['location_y'] = patch_dict['patch_location'][1]
+                patch_name = dict_to_patch_name(patch_image_name_dict)
+                patch_full_name = os.path.join(output_dir, patch_name)
+                # write the file
+                patch_dict['patch_image'].convert('RGB').save(patch_full_name)
+                patch_number += 1
+
+            except StopIteration:
+                print('%i images written' % (patch_number + 1))
+                break
+
+
+    elif method == 'annotations_to_tfrecord':
+        tfrecord_file_name = file_name_base + '.tfrecords'
+        tfrecord_file_name = os.path.join(output_dir, tfrecord_file_name)
+
+        with tf_io.TFRecordWriter(tfrecord_file_name) as writer:
+            seq_number = 0
+            while True:
+                try:
+                    patch_dict = patch_generator_obj.next_patch()
+                    if len(class_label) > 0:
+                        patch_image_name_dict['class_label'] = class_label + '_' + patch_dict['label']
+                    else:
+                        patch_image_name_dict['class_label'] = patch_dict['label']
+
+                    patch_image_name_dict['location_x'] = patch_dict['patch_location'][0]
+                    patch_image_name_dict['location_y'] = patch_dict['patch_location'][1]
+                    patch_name = dict_to_patch_name(patch_image_name_dict)
+
+                    image_string = patch_dict['patch_image'].convert('RGB')
+
+                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+
+                    try:
+                        image_string.save(tmp.name)
+                        image_string = open(tmp.name, 'rb').read()
+
+                    except:
+                        print('Image write-read exception with patch # %i, named:\n%s' % (seq_number, patch_name))
+                        pass
+
+                    finally:
+                        os.unlink(tmp.name)
+                        tmp.close()
+
+                    tf_example_obj = tf_imp_dict(image_string,
+                                                 label=seq_number,
+                                                 image_name=bytes(patch_name, 'utf8'),
+                                                 class_label=bytes(class_label, 'utf8'))
+
+                    writer.write(tf_example_obj.SerializeToString())
+                    seq_number += 1
+
+                except StopIteration:
+                    print('%5i images written to %s' % (seq_number, tfrecord_file_name))
+                    break
 
 
 """                             Use Case 3 
