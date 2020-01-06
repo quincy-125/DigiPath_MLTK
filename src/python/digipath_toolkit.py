@@ -5,7 +5,7 @@ process large slide images using openslide
 """
 import os
 import tempfile
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 import argparse
 import warnings
 
@@ -16,6 +16,7 @@ import yaml
 from skimage.filters import threshold_otsu
 from skimage.color import rgb2lab
 
+from PIL import Image
 from PIL import ImageDraw
 from PIL import TiffImagePlugin as tip
 
@@ -1232,7 +1233,7 @@ def get_priority_location_arrays_dict(run_parameters):
 
 
 class AnnotationPatchesGenerator():
-    def __init__(self, run_paramters):
+    def __init__(self, run_parameters):
 
         self.image_level = int(run_parameters['image_level'])
         self.patch_size = (int(run_parameters['patch_width']), int(run_parameters['patch_height']))
