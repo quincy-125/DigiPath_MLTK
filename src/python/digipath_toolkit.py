@@ -1380,7 +1380,7 @@ def run_annotated_patches(run_parameters):
     patch_generator_obj = AnnotationPatchesGenerator(run_parameters)
 
     if method == 'annotations_to_dir':
-        patch_number = -2
+        patch_number = -1
         while True:
             try:
                 patch_dict = patch_generator_obj.next_patch()

@@ -52,6 +52,12 @@ test_registration_pairs_dir:
 test_registration_pairs_tfr:
 	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file registration_pairs_to_tfrecord.yml
 
+test_annotations_to_dir:
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file annotations_to_dir.yml
+
+test_annotations_to_tfr:
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file annotations_to_tfrecord.yml
+
 
 # # # # # # # 
 # Uint tests
