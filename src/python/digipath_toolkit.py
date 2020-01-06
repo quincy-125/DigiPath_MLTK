@@ -546,7 +546,7 @@ def get_patch_location_array_for_image_level(run_parameters):
     return patch_location_array
 
 """
-                            patch image generator
+                            patch image generators
 """
 
 class PatchImageGenerator():
