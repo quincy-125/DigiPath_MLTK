@@ -893,9 +893,6 @@ def run_imfile_to_tfrecord(run_parameters):
         2.  Requires dictionary for class labels 
 """
 
-MINIMUM_THUMB_PATCH_DIM = 2
-
-
 def get_priority_ordered_labels(label_id_priority_fname):
     """ ordered_priority_dict = get_priority_ordered_labels(label_id_priority_fname)
     read the input .csv file into a priority dictionary struct
@@ -1140,8 +1137,6 @@ def get_priority_location_arrays_dict(run_parameters):
 
     patch_height = run_parameters['patch_height']
     patch_width = run_parameters['patch_width']
-    thumb_patch_height = max(MINIMUM_THUMB_PATCH_DIM, patch_height // thumbnail_divisor)
-    thumb_patch_width = max(MINIMUM_THUMB_PATCH_DIM, patch_width // thumbnail_divisor)
 
     threshold = run_parameters['threshold']
 
