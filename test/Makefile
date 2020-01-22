@@ -15,7 +15,7 @@ env_setup:	create_run_dir copy_run_files
 
 unit_test:	unit_test_filename unit_test_fences unit_test_run_parameters unit_test_sample_select
 
-integration_test: test_im_2_tfr test_tfr_2_mthumb test_wsi_2_patches_dir test_write_mask_preview
+integration_test: test_im_2_tfr test_tfr_2_mthumb test_wsi_2_patches_dir test_write_mask_preview test_registration_pairs_dir test_registration_pairs_tfr test_annotations_to_dir test_annotations_to_tfr
 
 
 # # # # # # #
