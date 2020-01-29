@@ -1,5 +1,6 @@
 # DigiPath_MLTK package named *pychunklbl*
-The _*py.toolkit*_ module doda
+The package module _*pychunklbl.toolkit*_ provides eight parameterized functions designed to work with large image files and provide pre-processing for machine learning with tensorflow 2.0.
+
 ****
 ## Installation
 ```
