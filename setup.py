@@ -11,7 +11,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as fh:
     readme_text = fh.read()
 
-setup(name='pypatches',
+setup(name='pylablock',
 	version='0.0.1',
 	long_description=readme_text,
 	long_description_content_type='text/markdown',
@@ -24,8 +24,8 @@ setup(name='pypatches',
 	'Programming Language :: Python :: 3.8',
 	"Operating System :: OS Independent"],
 	python_requires='>=3.5',
-	package_dir={'': 'pypatches'},
-	packages=find_packages(where='pypatches'),
+	package_dir={'': 'pylablock'},
+	packages=find_packages(where='pylablock'),
 	project_urls={'Source': 'https://github.com/ncsa/DigiPath_MLTK'})
 
 """
