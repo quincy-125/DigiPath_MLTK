@@ -1,7 +1,8 @@
 # Parameterized large image pre-processing with _*pychunklbl.toolkit*_
 The package module _*pychunklbl.toolkit*_ provides eight parameterized functions designed to work with large image files and provide pre-processing for machine learning with tensorflow 2.0.
 
-The package module is intended developers to create machine learning datasets leveraging the [openslide](https://openslide.org/) library for usage with tensorflow 2.0.
+The package module is intended developers to create machine learning datasets leveraging the [openslide](https://openslide.org/) library for usage with [tensorflow 2.0](https://www.tensorflow.org/).
+
 ****
 ## Installation
 ```
