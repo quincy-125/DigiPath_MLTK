@@ -1,4 +1,4 @@
-# DigiPath_MLTK package named *pychunklbl*
+# DigiPath_MLTK package module _*pychunklbl.toolkit*_
 The package module _*pychunklbl.toolkit*_ provides eight parameterized functions designed to work with large image files and provide pre-processing for machine learning with tensorflow 2.0.
 
 ****
