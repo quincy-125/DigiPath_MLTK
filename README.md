@@ -19,7 +19,15 @@ Each parameters (*.yml*) file is a template for running one of the eight methods
 When edited with valid data they run from the command line using the example main function in this repository: <br>
 `src/python/digipath_tk_run.py`
 
-### Call with the example main file:
+### Command line example:
 ```
 python3 ../DigiPath_MLTK/src/digipath_tk_run.py -run_directory . -run_file annotations_to_dir.yml
 ```
+
+****
+## Installation test:
+The *DigiPath_MLTK/test* directory contains the Makefile that may be used for either development or post-installation testing.
+
+The README.md details how to run the integration test suite after installing the package as a module.
+
+By changing the first line of the Makefile `SCRIPT = ../src/python/digipath_tk_run.py` to `SCRIPT = ../src/python/digipath_mltk.py` the code in this (cloned) repository can be run for development purposes.
