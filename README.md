@@ -1,20 +1,16 @@
-# DigiPath_MLTK
-### _See Test Dir Make Readme_ <br>
-_Note: code works as described below, the new module will use the same command line calls._ <br>
+# DigiPath_MLTK package named *pychunklbl*
+The _*py.toolkit*_ module doda
 ****
-## Requirements:
+## Installation
 ```
-# python 3.5 or later
+pip install -i https://test.pypi.org/simple/ pychunklbl==0.0.5
+
+# requires python 3.5 or later
 pip3 install requirements.txt
 ```
 ****
-## Usage examples
-1 Clone or unzip this repository to your computer. <br>
-2 Create a run-directory and a results directory. <br>
-3 Copy the yaml files to the run-directory. <br>
-4 Edit the yaml files to point to you run and results directories. <br>
-5 Edit any other yaml file run parameters. <br>
-6 Run the code with the edited yaml file in the run directory.  <br>
+## Package usage:
+The toolkit module in the pychunklbl package takes .yml files as input to the  
 ```
 python ../DigiPath_MLTK/src/python/digipath_mltk.py -run_directory . -run_file image_files_to_tfrecord.yml
 ```
