@@ -1,5 +1,7 @@
 PyYAML==5.1
-matplotlib==3.0.2
 numpy==1.16.1
 pandas==0.23.4
 tensorflow==2.0.0rc0
+openslide-python==1.1.1
+Pillow==7.0.0
+scikit-image==0.16.2
