@@ -11,7 +11,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as fh:
     readme_text = fh.read()
 
-setup(name='pylablock',
+setup(name='pychunklbl',
 	version='0.0.1',
 	long_description=readme_text,
 	long_description_content_type='text/markdown',
@@ -24,8 +24,8 @@ setup(name='pylablock',
 	'Programming Language :: Python :: 3.8',
 	"Operating System :: OS Independent"],
 	python_requires='>=3.5',
-	package_dir={'': 'pylablock'},
-	packages=find_packages(where='pylablock'),
+	package_dir={'': 'pychunklbl'},
+	packages=find_packages(where='pychunklbl'),
 	project_urls={'Source': 'https://github.com/ncsa/DigiPath_MLTK'})
 
 """
@@ -34,6 +34,9 @@ python3 -m pip install --user --upgrade twine
 
 # with __token__ (the one from your test pypi account)
 python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+# install test package:
+pip3 install -i https://test.pypi.org/simple/ pychunklbl==0.0.1
 
 """
 
