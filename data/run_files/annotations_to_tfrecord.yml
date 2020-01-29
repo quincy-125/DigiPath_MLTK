@@ -1,0 +1,19 @@
+
+method:                   annotations_to_tfrecord
+    
+output_dir:               ../../run_dir/results
+    
+wsi_filename:             ../../DigiPath_MLTK_data/RegistrationDevData/e39a8d60a56844d695e9579bce8f0335.tiff
+csv_file_name:            ../data/test_data/class_label_id_test.csv
+xml_file_name:            ../data/test_data/e39a8d60a56844d695e9579bce8f0335.xml
+    
+thumbnail_divisor:        56
+patch_stride_fraction:    1.0
+image_level:              4
+    
+patch_height:             224
+patch_width:              224
+    
+threshold:                0
+patch_select_method:      threshold_rgb2lab
+rgb2lab_threshold:        80
