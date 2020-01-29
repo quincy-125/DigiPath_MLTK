@@ -9,7 +9,7 @@ The package module is intended developers to create machine learning datasets le
 pip install -i https://test.pypi.org/simple/ pychunklbl==0.0.5
 
 # requires python 3.5 or later
-pip3 install requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ****
