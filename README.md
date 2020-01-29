@@ -11,9 +11,12 @@ pip3 install requirements.txt
 ```
 ****
 ## Package usage:
-The toolkit module in the pychunklbl package takes .yml files as input to the  
+Example *.yml* files are in the DigiPath_MLTK/data/run_files directory and may be used as templates to run with your data.
+
+Each *.yml* parameters file is a template for running one of the eight methods and (when edited with valid data files) may run from the command line with the example multi-main function in this repository:
+`src/python/digipath_tk_run.py`
 ```
-python ../DigiPath_MLTK/src/python/digipath_mltk.py -run_directory . -run_file image_files_to_tfrecord.yml
+python3 ../DigiPath_MLTK/src/digipath_tk_run.py -run_directory . -run_file image_files_to_tfrecord.yml
 ```
 
 ## The "method" parameter in the yaml files:
