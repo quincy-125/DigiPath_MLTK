@@ -7,6 +7,11 @@
 [Viewing Patches for Image Level](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html)
 
 # High Level Function Examples: Use Cases
+```text
+  High level functions take a dictionary of parameters. 
+  There is an example ".yml" file for each use case.
+  Below is a link to an example call for each use case by modifing its example ".yml" file.
+```
 [Givin a WSI and a label export patches to a tfrecord or a directory](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
 [Givin a WSI and a label export patches to a tfrecord](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
 [Givin a WSI and an Annotation File export patches to tfrecords](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
