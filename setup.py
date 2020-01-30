@@ -20,11 +20,11 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as fh:
     readme_text = fh.read()
 
 setup(name='pychunklbl',
-	version='0.0.5',
+	version='0.0.7',
 	long_description=readme_text,
 	long_description_content_type='text/markdown',
 	author='Mayo-NCSA DigiPath_MLTK development team',
-	url='https://https://github.com/ncsa/DigiPath_MLTK',
+	url='https://ncsa.github.io/DigiPath_MLTK/',
 	classifiers=['License :: OSI Approved :: MIT License', 
 	'Programming Language :: Python :: 3.5', 
 	'Programming Language :: Python :: 3.6',
@@ -34,3 +34,4 @@ setup(name='pychunklbl',
 	python_requires='>=3.5',
 	packages=['pychunklbl'],
 	project_urls={'Source': 'https://github.com/ncsa/DigiPath_MLTK'})
+
