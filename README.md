@@ -35,3 +35,11 @@ The README.md details how to run the integration test suite after installing the
 By changing the first line of the Makefile `SCRIPT = ../src/python/digipath_tk_run.py` to `SCRIPT = ../src/python/digipath_mltk.py` the code in this (cloned) repository can be run for development purposes.
 
 Note: the run_parameters from the *.yml* files are just regular python type dict when passed to the toolkit module.
+
+****
+## Documentation:
+[Developer Documentation Notebooks: functions usage](https://ncsa.github.io/DigiPath_MLTK/) <br>
+
+
+
+Note: the run_parameters from the *.yml* files are just regular python type dict when passed to the toolkit module.
