@@ -13,7 +13,5 @@
   There is an template-example ".yml" file for each in data/run_files
   with a notebook demonstration of usage and expected results in the docs directory.
 ```
-[Givin a WSI and a label export patches to a tfrecord or a directory](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
-[Givin a WSI and a label export patches to a tfrecord](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
-[Givin a WSI and an Annotation File export patches to tfrecords](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
-[Givin two WSI files and the image registration offset export patches to a tfrecord or directory](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
+[Givin a WSI and a label export patches to a directory](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
+
