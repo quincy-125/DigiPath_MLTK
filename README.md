@@ -39,7 +39,3 @@ Note: the run_parameters from the *.yml* files are just regular python type dict
 ****
 ## Documentation:
 [Developer Documentation Notebooks: functions usage](https://ncsa.github.io/DigiPath_MLTK/) <br>
-
-
-
-Note: the run_parameters from the *.yml* files are just regular python type dict when passed to the toolkit module.
