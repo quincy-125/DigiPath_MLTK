@@ -8,13 +8,12 @@
 
 # High Level Function Examples: Use Cases
 ```text
-  High level functions take a dictionary of parameters. 
-  There is an example ".yml" file for each use case.
-  Below is a link to an example call for each use case by modifing its example ".yml" file.
+  Each Use Case (high level function) takes a dictionary of parameters for input arguments.
+  
+  There is an template-example ".yml" file for each in data/run_files
+  with a notebook demonstration of usage and expected results in the docs directory.
 ```
 [Givin a WSI and a label export patches to a tfrecord or a directory](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
 [Givin a WSI and a label export patches to a tfrecord](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
 [Givin a WSI and an Annotation File export patches to tfrecords](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
 [Givin two WSI files and the image registration offset export patches to a tfrecord or directory](https://ncsa.github.io/DigiPath_MLTK/View_patches_for_Image_levels.html) <br>
-
-
