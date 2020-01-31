@@ -41,8 +41,9 @@ Note: the run_parameters from the *.yml* files are just regular python type dict
 [Developer Documentation Notebooks: functions usage](https://ncsa.github.io/DigiPath_MLTK/) <br>
 
 ## High Level functions Reference:
-Givin a WSI and a label export patches to a directory: [image_file_to_patches_directory_for_image_level(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
+Givin a WSI and a label export patches to a directory: <br> [image_file_to_patches_directory_for_image_level(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
 
-Givin a WSI and a label export patches to a TFRecords file: [run_imfile_to_tfrecord(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_tfrecord_and_view_tfrecord.html) <br>
+Givin a WSI and a label export patches to a TFRecords file: <br> 
+[run_imfile_to_tfrecord(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_tfrecord_and_view_tfrecord.html) <br>
 
 
