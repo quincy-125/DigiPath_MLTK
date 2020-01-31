@@ -127,11 +127,11 @@ def parse_args():
 if __name__ == "__main__":
     run_parameters = parse_args()
 
-    if run_parameters['method'] == 'wsi_2_patches_dir':
+    if run_parameters['method'] == 'wsi_to_patches':
         wsi_file_to_patches_tfrecord(run_parameters)
 
     if run_parameters['method'] == 'write_mask_preview_set':
         write_mask_preview_set(run_parameters)
 
-    if run_parameters['method'] == 'wsi_to_patches':
+    if run_parameters['method'] == 'wsi_2_patches_dir':
         image_file_to_patches_directory_for_image_level(run_parameters)
