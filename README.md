@@ -28,7 +28,7 @@ python3 ../DigiPath_MLTK/src/digipath_tk_run.py -run_directory . -run_file annot
 
 ****
 ## Documentation:
-[Developer Documentation Notebooks:](https://ncsa.github.io/DigiPath_MLTK/) <br>
+[package modules usage:](https://ncsa.github.io/DigiPath_MLTK/) <br>
 
 ## High Level functions Reference:
 Givin a WSI and a label export patches to a directory: <br> [image_file_to_patches_directory_for_image_level(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
