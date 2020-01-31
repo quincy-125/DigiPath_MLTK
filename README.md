@@ -22,10 +22,16 @@ When edited with valid data they run from the command line using the example mai
 `src/python/digipath_tk_run.py`
 
 ### Command line examples
-Find the patches in a wsi file and write to a directory
+Find the patches in a wsi file and write to a directory.
+```
+python3 -m pychunklbl.cli -m wsi_to_patches_dir -w data/CMU-1-Small-Region.svs -o results_cli
+```
+
+Find the patches in a wsi file and write to a .tfrecords file.
 ```
 python3 -m pychunklbl.cli -m wsi_to_patches -w data/CMU-1-Small-Region.svs -o results_cli
 ```
+
 
 ****
 ## Documentation:
