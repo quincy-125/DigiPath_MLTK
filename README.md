@@ -21,10 +21,22 @@ Each parameters (*.yml*) file is a template for running one of the eight methods
 When edited with valid data they run from the command line using the example main function in this repository: <br>
 `src/python/digipath_tk_run.py`
 
-### Command line example:
+### Command line examples (using a repository data/images/ file)
+#### Find the patches in a wsi file and write to a directory.
 ```
-python3 ../DigiPath_MLTK/src/digipath_tk_run.py -run_directory . -run_file annotations_to_dir.yml
+python3 -m pychunklbl.cli -m wsi_to_patches_dir -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
 ```
+
+#### Find the patches in a wsi file and write to an image file for preview.
+```
+python3 -m pychunklbl.cli -m write_mask_preview_set -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
+```
+
+#### Find the patches in a wsi file and write to a .tfrecords file.
+```
+python3 -m pychunklbl.cli -m wsi_to_patches -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
+```
+
 
 ****
 ## Documentation:
