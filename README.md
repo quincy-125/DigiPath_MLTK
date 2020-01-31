@@ -23,7 +23,10 @@ When edited with valid data they run from the command line using the example mai
 
 ### Command line example:
 ```
-python3 ../DigiPath_MLTK/src/digipath_tk_run.py -run_directory . -run_file annotations_to_dir.yml
+# call the method: image_file_to_patches_directory_for_image_level
+# with the repo example file: CMU-1-Small-Region.svs
+# and write output to results_cli
+python3 -m pychunklbl.cli -m wsi_to_patches -w data/CMU-1-Small-Region.svs -o results_cli
 ```
 
 ****
