@@ -21,11 +21,13 @@ Each parameters (*.yml*) file is a template for running one of the eight methods
 When edited with valid data they run from the command line using the example main function in this repository: <br>
 `src/python/digipath_tk_run.py`
 
-### Command line example:
+### Command line examples:
+```text
+        call the method: image_file_to_patches_directory_for_image_level
+        with the repo example file: CMU-1-Small-Region.svs
+        write output to results_cli
 ```
-# call the method: image_file_to_patches_directory_for_image_level
-# with the repo example file: CMU-1-Small-Region.svs
-# and write output to results_cli
+```
 python3 -m pychunklbl.cli -m wsi_to_patches -w data/CMU-1-Small-Region.svs -o results_cli
 ```
 
