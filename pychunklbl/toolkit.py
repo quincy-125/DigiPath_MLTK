@@ -24,8 +24,16 @@ import tensorflow as tf
 from tensorflow import io as tf_io
 
 import openslide
+import logging
+logger = logging.getLogger(__name__)
+logger_repeat = logger
+ch = logging.StreamHandler()
+formatter = logging.Formatter('\x1b[80D\x1b[1A\x1b[K%(message)s')
+ch.setFormatter(formatter)
+logger_repeat.addHandler(ch)    # TODO: This should overwrite the previous line, but it isn't
 
 MIN_STRIDE_PIXELS = 3
+
 """
                             parser utility: 
 """
@@ -796,7 +804,10 @@ def wsi_file_to_patches_tfrecord(run_parameters):
         None:                    prints number of images and output file name if successful
 
     """
-    _, file_name_base = os.path.split(run_parameters['wsi_filename'])
+    try:
+        _, file_name_base = os.path.split(run_parameters['wsi_filename'])
+    except TypeError:
+        file_name_base = os.path.basename(run_parameters['wsi_filename'])
     file_name_base, _ = os.path.splitext(file_name_base)
     class_label = run_parameters['class_label']
     output_dir = run_parameters['output_dir']
@@ -817,7 +828,9 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
     patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
 
+    logger.info('Beginning Patch Generator')
     patch_generator = PatchImageGenerator(run_parameters)
+    logger.info('Completed Patch Generator')
 
     with tf_io.TFRecordWriter(tfrecord_file_name) as writer:
         seq_number = 0
@@ -828,6 +841,7 @@ def wsi_file_to_patches_tfrecord(run_parameters):
                 y = patch_dict['image_level_y']
                 patch_image_name_dict['location_x'] = x
                 patch_image_name_dict['location_y'] = y
+                logger_repeat.info('Working on (x,y): ({}, {})'.format(x, y))
                 patch_name = dict_to_patch_name(patch_image_name_dict)
 
                 image_string = patch_dict['patch_image'].convert('RGB')
@@ -1919,9 +1933,11 @@ def write_mask_preview_set(run_parameters):
     wsi_file_base, _ = os.path.splitext(wsi_file_base)
 
     #               get the two images and the location array
+    logger.info('get_patch_locations_preview_image_for_image_level')
     mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_image_for_image_level(run_parameters)
 
     #               name and write the thumb_preview image
+    logger.info('Saving thumbnails')
     thumb_preview_filename = os.path.join(output_dir, wsi_file_base + 'marked_thumb.jpg')
     with open(thumb_preview_filename, 'w') as fh:
         thumb_preview.save(fh)
@@ -1932,6 +1948,7 @@ def write_mask_preview_set(run_parameters):
         mask_image.save(fh)
 
     #               name, build and write a dataframe for the upper left corners list
+    logger.info('Building location dataframe')
     location_array_filename = os.path.join(output_dir, wsi_file_base + 'patch_locations.tsv')
     patchlocation_df = pd.DataFrame(patch_location_array, columns=['row', 'col'])
     patchlocation_df.index.name = '#'
