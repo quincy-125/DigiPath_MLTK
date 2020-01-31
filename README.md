@@ -14,7 +14,7 @@ pip3 install -r requirements.txt
 
 ****
 ## Package usage:
-Example *.yml* files are in the DigiPath_MLTK/data/run_files directory and may be used as templates to run with your data.
+Example *.yml* files are in the *DigiPath_MLTK/data/run_files* directory and may be used as templates to run with your data.
 
 Each parameters (*.yml*) file is a template for running one of the eight methods. 
 
