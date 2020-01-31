@@ -35,7 +35,7 @@ copy_run_files:
 # # # # # # #
 
 test_im_2_tfr:
-	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file image_files_to_tfrecord.yml
+	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file wsi_file_to_tfrecord.yml
 
 test_tfr_2_mthumb:
 	$(PYTHON_NAME) $(SCRIPT) -run_directory $(RUN_DIR) -run_file tfrecord_to_masked_thumb.yml
