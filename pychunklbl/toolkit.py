@@ -1655,6 +1655,7 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
                                 patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              minimimum sum of thresholded image (default = 0)
+                                image_level:            0 is full scale,
 
     Returns:                    None - writes images to output_dir (possibly many)
                                 (prints number of images written)
