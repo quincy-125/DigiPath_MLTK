@@ -39,3 +39,6 @@ Note: the run_parameters from the *.yml* files are just regular python type dict
 ****
 ## Documentation:
 [Developer Documentation Notebooks: functions usage](https://ncsa.github.io/DigiPath_MLTK/) <br>
+
+## High Level functions:
+[image_file_to_patches_directory_for_image_level()](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
