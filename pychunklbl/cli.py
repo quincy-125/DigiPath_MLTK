@@ -23,6 +23,11 @@ def parse_args():
                         required=True,
                         help="WSI File name")
 
+    parser.add_argument("-f", "--wsi_floatname",
+                        dest='wsi_floatname',
+                        required=False,
+                        help="offset WSI File name")
+
     parser.add_argument("-o", "--output_dir",
                         dest='output_dir',
                         default='.',
@@ -96,6 +101,26 @@ def parse_args():
                         default="INFO",
                         help="Set the logging level")
 
+    parser.add_argument("-r", "--tfrecord_file_name",
+                        dest='tfrecord_file_name',
+                        required=False,
+                        help="TFRecord File name")
+
+    parser.add_argument("-d", "--offset_data_file",
+                        dest='offset_data_file',
+                        required=False,
+                        help="registration offset data file name")
+
+    parser.add_argument("-a", "--xml_file_name",
+                        dest='xml_file_name',
+                        required=False,
+                        help="xml annotations data file name")
+
+    parser.add_argument("-p", "--csv_file_name",
+                        dest='csv_file_name',
+                        required=False,
+                        help="annotations priority data file name")
+
     args = parser.parse_args()
     logging.basicConfig(stream=sys.stderr, level=args.logLevel,
                         format='%(name)s (%(levelname)s): %(message)s')
@@ -120,6 +145,10 @@ def parse_args():
     run_parameters['offset_x'] = int(args.offset_x)
     run_parameters['offset_y'] = int(args.offset_y)
     run_parameters['border_color'] = args.border_color
+    run_parameters['tfrecord_file_name'] = args.tfrecord_file_name
+    run_parameters['offset_data_file'] = args.offset_data_file
+    run_parameters['xml_file_name'] = args.xml_file_name
+    run_parameters['csv_file_name'] = args.csv_file_name
 
     return run_parameters
 
@@ -127,11 +156,26 @@ def parse_args():
 if __name__ == "__main__":
     run_parameters = parse_args()
 
-    if run_parameters['method'] == 'wsi_to_patches':
-        wsi_file_to_patches_tfrecord(run_parameters)
-
     if run_parameters['method'] == 'write_mask_preview_set':
         write_mask_preview_set(run_parameters)
 
     if run_parameters['method'] == 'wsi_2_patches_dir':
         image_file_to_patches_directory_for_image_level(run_parameters)
+
+    if run_parameters['method'] == 'wsi_to_patches':
+        wsi_file_to_patches_tfrecord(run_parameters)
+
+    if run_parameters['method'] == 'tfrecord_2_masked_thumb':
+        write_tfrecord_marked_thumbnail_image(run_parameters)
+
+    if run_parameters['method'] == 'registration_to_dir':
+        run_registration_pairs(run_parameters)
+
+    if run_parameters['method'] == 'registration_to_tfrecord':
+        run_registration_pairs(run_parameters)
+
+    if run_parameters['method'] == 'annotations_to_dir':
+        run_annotated_patches(run_parameters)
+
+    if run_parameters['method'] == 'annotations_to_tfrecord':
+        run_annotated_patches(run_parameters)
