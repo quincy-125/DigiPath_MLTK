@@ -13,20 +13,15 @@ pip3 install -r requirements.txt
 ```
 
 ****
-## Package usage:
-Example *(parameters).yml* files are in the *DigiPath_MLTK/data/run_files* directory and may be used as templates to run with your data.
-
-Each parameters (*.yml*) file is a template for running one of the methods. 
-
-### Command line examples (using a repository data/images/ file)
-#### Find the patches in a wsi file and write to a directory.
-```
-python3 -m pychunklbl.cli -m wsi_to_patches_dir -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
-```
-
+### Command line examples
 #### Find the patches in a wsi file and write to an image file for preview.
 ```
 python3 -m pychunklbl.cli -m write_mask_preview_set -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
+```
+
+#### Find the patches in a wsi file and write to a directory.
+```
+python3 -m pychunklbl.cli -m wsi_to_patches_dir -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
 ```
 
 #### Find the patches in a wsi file and write to a .tfrecords file.
@@ -34,10 +29,39 @@ python3 -m pychunklbl.cli -m write_mask_preview_set -w data/images/CMU-1-Small-R
 python3 -m pychunklbl.cli -m wsi_to_patches -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
 ```
 
+#### View the patch locations in a .tfrecoreds file.
+```
+python3 -m pychunklbl.cli -m tfrecord_2_masked_thumb -w data/images/CMU-1-Small-Region.svs -r ../data/tfrecords/CMU-1-Small-Region.tfrecords -o ../run_dir/results_cli
+```
+
+#### Find pairs of patches with registration offset in two wsi files and write to a directory.
+```
+python3 -m pychunklbl.cli -m registration_to_dir -w 54742d6c5d704efa8f0814456453573a.tiff -f e39a8d60a56844d695e9579bce8f0335.tiff -d wsi_pair_sample.csv -o ../run_dir/results_cli
+```
+
+#### Find pairs of patches with registration offset in two wsi files and write to a tfrecords file.
+```
+python3 -m pychunklbl.cli -m registration_to_dir -w 54742d6c5d704efa8f0814456453573a.tiff -f e39a8d60a56844d695e9579bce8f0335.tiff -d wsi_pair_sample.csv -o ../run_dir/results_cli
+```
+
+#### Find the patches in a wsi file defined in an annotations file with a priority file and write to a directory.
+```
+python3 -m pychunklbl.cli -m annotations_to_dir -w e39a8d60a56844d695e9579bce8f0335.tff -p class_label_id_test.csv -a e39a8d60a56844d695e9579bce8f0335.xml -o ../run_dir/results_cli
+```
+
+#### Find the patches in a wsi file defined in an annotations file with a priority file and write to a tfrecords file.
+```
+python3 -m pychunklbl.cli -m annotations_to_dir -w e39a8d60a56844d695e9579bce8f0335.tff -p class_label_id_test.csv -a e39a8d60a56844d695e9579bce8f0335.xml -o ../run_dir/results_cli
+```
 
 ****
-## Documentation:
+## Developer usage - documentation:
 [package modules usage:](https://ncsa.github.io/DigiPath_MLTK/) <br>
+
+Example *(parameters).yml* files are in the *DigiPath_MLTK/data/run_files* directory and may be used as templates to run with your data.
+
+Each parameters (*.yml*) file is a template for running one of the methods. 
+
 
 ## High level functions usage details:
 Givin a WSI and a label export patches to a directory: <br> [image_file_to_patches_directory_for_image_level(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
