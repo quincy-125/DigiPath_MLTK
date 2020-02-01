@@ -55,15 +55,10 @@ python3 -m pychunklbl.cli -m annotations_to_dir -w e39a8d60a56844d695e9579bce8f0
 ```
 
 ****
-## Developer usage - documentation:
+## Detailed module usage - documentation:
 [package modules usage:](https://ncsa.github.io/DigiPath_MLTK/) <br>
 
-Example *(parameters).yml* files are in the *DigiPath_MLTK/data/run_files* directory and may be used as templates to run with your data.
-
-Each parameters (*.yml*) file is a template for running one of the methods. 
-
-
-## High level functions usage details:
+### High level functions usage details:
 Givin a WSI and a label export patches to a directory: <br> [image_file_to_patches_directory_for_image_level(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
 
 Givin a WSI and a label export patches to a TFRecords file: <br> 
