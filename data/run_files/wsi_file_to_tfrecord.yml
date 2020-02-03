@@ -1,7 +1,6 @@
 #                       Parameter set for make target: test_im_2_tfr or test_im_2_tfr_python2
 
-# method:               image_2_tfrecord
-method:                 image_2_tfrecord
+method:                 wsi_to_patches
 
 # wsi_filename:         file name (with valid path)
 wsi_filename:           ../data/images/CMU-1-Small-Region.svs
