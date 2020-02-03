@@ -1,4 +1,4 @@
-SCRIPT = ../pychunklbl/rp_cli.py
+SCRIPT = integration/call_src_only.py
 RUN_DIR = ../../run_dir/
 RUN_FILES = ../data/run_files
 RESULTS_DIR = $(RUN_DIR)/results
