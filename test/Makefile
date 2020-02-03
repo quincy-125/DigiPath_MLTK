@@ -1,4 +1,4 @@
-SCRIPT = ../src/python/digipath_tk_run.py
+SCRIPT = ../pychunklbl/rp_cli.py
 RUN_DIR = ../../run_dir/
 RUN_FILES = ../data/run_files
 RESULTS_DIR = $(RUN_DIR)/results
