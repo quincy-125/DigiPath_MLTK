@@ -18,7 +18,7 @@ def parse_args():
                         choices=['wsi_2_patches_dir', 'write_mask_preview_set', 'wsi_to_patches'],
                         help="Method to run")
 
-    parser.add_argument("-w", "--wsi_filename",
+    parser.add_argument("-i", "--wsi_filename",
                         dest='wsi_filename',
                         required=True,
                         help="WSI File name")
@@ -121,6 +121,16 @@ def parse_args():
                         required=False,
                         help="annotations priority data file name")
 
+    parser.add_argument("-h", "--patch_height",
+                        dest='patch_height',
+                        default=224,
+                        help="height of patch images")
+
+    parser.add_argument("-w", "--patch_width",
+                        dest='patch_width',
+                        default=224,
+                        help="width of patch images")
+
     args = parser.parse_args()
     logging.basicConfig(stream=sys.stderr, level=args.logLevel,
                         format='%(name)s (%(levelname)s): %(message)s')
@@ -149,6 +159,8 @@ def parse_args():
     run_parameters['offset_data_file'] = args.offset_data_file
     run_parameters['xml_file_name'] = args.xml_file_name
     run_parameters['csv_file_name'] = args.csv_file_name
+    run_parameters['patch_height'] = args.patch_height
+    run_parameters['patch_width'] = args.patch_width
 
     return run_parameters
 
