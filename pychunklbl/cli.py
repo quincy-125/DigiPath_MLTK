@@ -15,7 +15,10 @@ def parse_args():
     parser.add_argument("-m", "--method",
                         dest='method',
                         default='wsi_2_patches_dir',
-                        choices=['wsi_2_patches_dir', 'write_mask_preview_set', 'wsi_to_patches'],
+                        choices=['wsi_2_patches_dir',
+                                 'write_mask_preview_set',
+                                 'wsi_to_patches',
+                                 'wrte_mask_preview_set'],
                         help="Method to run")
 
     parser.add_argument("-i", "--wsi_filename",
@@ -43,7 +46,7 @@ def parse_args():
                         default=10,
                         help="Full size divisor to create thumbnail image")
 
-    parser.add_argument("-p", "--pixel_hw",
+    parser.add_argument("-S", "--pixel_hw",
                         dest='pixel_hw',
                         default=512,
                         help="Patch size")
@@ -106,7 +109,7 @@ def parse_args():
                         required=False,
                         help="TFRecord File name")
 
-    parser.add_argument("-d", "--offset_data_file",
+    parser.add_argument("-D", "--offset_data_file",
                         dest='offset_data_file',
                         required=False,
                         help="registration offset data file name")
@@ -116,20 +119,11 @@ def parse_args():
                         required=False,
                         help="xml annotations data file name")
 
-    parser.add_argument("-p", "--csv_file_name",
+    parser.add_argument("-L", "--csv_file_name",
                         dest='csv_file_name',
                         required=False,
                         help="annotations priority data file name")
 
-    parser.add_argument("-h", "--patch_height",
-                        dest='patch_height',
-                        default=224,
-                        help="height of patch images")
-
-    parser.add_argument("-w", "--patch_width",
-                        dest='patch_width',
-                        default=224,
-                        help="width of patch images")
 
     args = parser.parse_args()
     logging.basicConfig(stream=sys.stderr, level=args.logLevel,
@@ -159,8 +153,6 @@ def parse_args():
     run_parameters['offset_data_file'] = args.offset_data_file
     run_parameters['xml_file_name'] = args.xml_file_name
     run_parameters['csv_file_name'] = args.csv_file_name
-    run_parameters['patch_height'] = args.patch_height
-    run_parameters['patch_width'] = args.patch_width
 
     return run_parameters
 
