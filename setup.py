@@ -20,7 +20,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as fh:
     readme_text = fh.read()
 
 setup(name='pychunklbl',
-	version='0.0.12',
+	version='0.0.13',
 	long_description=readme_text,
 	long_description_content_type='text/markdown',
 	author='Mayo-NCSA DigiPath_MLTK development team',
