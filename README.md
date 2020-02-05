@@ -14,44 +14,45 @@ pip3 install -r requirements.txt
 
 ****
 ### Command line examples
+
 #### Find the patches in a wsi file and write to an image file for preview.
 ```
-python3 -m pychunklbl.cli -m write_mask_preview_set -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m write_mask_preview_set -i DigiPath_MLTK/data/images/CMU-1-Small-Region.svs -o results
 ```
 
 #### Find the patches in a wsi file and write to a directory.
 ```
-python3 -m pychunklbl.cli -m wsi_to_patches_dir -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m wsi_to_patches_dir -i DigiPath_MLTK/data/images/CMU-1-Small-Region.svs -o results
 ```
 
 #### Find the patches in a wsi file and write to a .tfrecords file.
 ```
-python3 -m pychunklbl.cli -m wsi_to_patches -w data/images/CMU-1-Small-Region.svs -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m wsi_to_patches -i DigiPath_MLTK//data/images/CMU-1-Small-Region.svs -o results
 ```
 
 #### View the patch locations in a .tfrecoreds file.
 ```
-python3 -m pychunklbl.cli -m tfrecord_2_masked_thumb -w data/images/CMU-1-Small-Region.svs -r ../data/tfrecords/CMU-1-Small-Region.tfrecords -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m tfrecord_2_masked_thumb -i DigiPath_MLTK/data/images/CMU-1-Small-Region.svs -r DigiPath_MLTK/data/tfrecords/CMU-1-Small-Region.tfrecords -o results
 ```
-
+`data not available for the following examples`
 #### Find pairs of patches with registration offset in two wsi files and write to a directory.
 ```
-python3 -m pychunklbl.cli -m registration_to_dir -w 54742d6c5d704efa8f0814456453573a.tiff -f e39a8d60a56844d695e9579bce8f0335.tiff -d wsi_pair_sample.csv -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m registration_to_dir -i fixed.tiff -f float.tiff -d wsi_pair_sample.csv -o results
 ```
 
 #### Find pairs of patches with registration offset in two wsi files and write to a tfrecords file.
 ```
-python3 -m pychunklbl.cli -m registration_to_dir -w 54742d6c5d704efa8f0814456453573a.tiff -f e39a8d60a56844d695e9579bce8f0335.tiff -d wsi_pair_sample.csv -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m registration_to_dir -i  fixed.tiff -f float.tiff -d wsi_pair_sample.csv -o results
 ```
 
 #### Find the patches in a wsi file defined in an annotations file with a priority file and write to a directory.
 ```
-python3 -m pychunklbl.cli -m annotations_to_dir -w e39a8d60a56844d695e9579bce8f0335.tff -p class_label_id_test.csv -a e39a8d60a56844d695e9579bce8f0335.xml -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m annotations_to_dir -i fixed.tff -p class_label_id_test.csv -a fixed.xml -o results
 ```
 
 #### Find the patches in a wsi file defined in an annotations file with a priority file and write to a tfrecords file.
 ```
-python3 -m pychunklbl.cli -m annotations_to_dir -w e39a8d60a56844d695e9579bce8f0335.tff -p class_label_id_test.csv -a e39a8d60a56844d695e9579bce8f0335.xml -o ../run_dir/results_cli
+python3 -m pychunklbl.cli -m annotations_to_dir -i fixed.tff -p class_label_id_test.csv -a fixed.xml -o results
 ```
 
 ****
