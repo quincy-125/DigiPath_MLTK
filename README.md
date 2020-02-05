@@ -34,7 +34,9 @@ python3 -m pychunklbl.cli -m wsi_to_patches -i DigiPath_MLTK//data/images/CMU-1-
 ```
 python3 -m pychunklbl.cli -m tfrecord_2_masked_thumb -i DigiPath_MLTK/data/images/CMU-1-Small-Region.svs -r DigiPath_MLTK/data/tfrecords/CMU-1-Small-Region.tfrecords -o results
 ```
-`data not available for the following examples`
+<br>
+`test data not available in DigiPath_MLTK repository for the following examples`
+
 #### Find pairs of patches with registration offset in two wsi files and write to a directory.
 ```
 python3 -m pychunklbl.cli -m registration_to_dir -i fixed.tiff -f float.tiff -d wsi_pair_sample.csv -o results
