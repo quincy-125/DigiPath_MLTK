@@ -22,7 +22,7 @@ python3 -m pychunklbl.cli -m write_mask_preview_set -i DigiPath_MLTK/data/images
 
 #### Find the patches in a wsi file and write to a directory.
 ```
-python3 -m pychunklbl.cli -m wsi_to_patches_dir -i DigiPath_MLTK/data/images/CMU-1-Small-Region.svs -o results
+python3 -m pychunklbl.cli -m wsi_2_patches_dir -i DigiPath_MLTK/data/images/CMU-1-Small-Region.svs -o results
 ```
 
 #### Find the patches in a wsi file and write to a .tfrecords file.
