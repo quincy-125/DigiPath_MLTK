@@ -56,15 +56,3 @@ python3 -m pychunklbl.cli -m annotations_to_dir -i fixed.tff -p class_label_id_t
 ```
 python3 -m pychunklbl.cli -m annotations_to_dir -i fixed.tff -p class_label_id_test.csv -a fixed.xml -o results
 ```
-
-****
-## Detailed module usage - documentation:
-[package modules usage:](https://ncsa.github.io/DigiPath_MLTK/) <br>
-
-### High level functions usage details:
-Givin a WSI and a label export patches to a directory: <br> [image_file_to_patches_directory_for_image_level(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_patches_directory_for_image_level.html) <br>
-
-Givin a WSI and a label export patches to a TFRecords file: <br> 
-[run_imfile_to_tfrecord(run_parameters)](https://ncsa.github.io/DigiPath_MLTK/image_file_to_tfrecord_and_view_tfrecord.html) <br>
-
-
