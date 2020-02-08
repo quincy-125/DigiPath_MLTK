@@ -1,4 +1,4 @@
-## Development or maintainance tests using Makefile.
+## Makefile tests: for development debug or maintainance
 Clone repository, cd to (test) directory. <br>
 Change to the _test_ directory 
 #### _Note:_
