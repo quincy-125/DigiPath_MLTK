@@ -30,7 +30,8 @@ create_run_dir:
 copy_run_files:
 	cp $(RUN_FILES)/*.yml $(RUN_DIR)
 
-
+download_test_images:
+	$(PYTHON_NAME) download_test_data.py
 
 # # # # # # #
 # Integration tests
