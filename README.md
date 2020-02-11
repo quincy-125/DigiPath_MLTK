@@ -34,7 +34,7 @@ python3 -m digipath_mltk.cli -m wsi_2_patches_dir -i CMU-1-Small-Region.svs -o r
 
 #### Find the patches in a wsi file and write to a .tfrecords file.
 ```
-python3 -m digipath_mltk.cli -m wsi_to_patches -i CMU-1-Small-Region.svs -o results
+python3 -m digipath_mltk.cli -m image_2_tfrecord -i CMU-1-Small-Region.svs -o results
 ```
 
 #### View the patch locations in a .tfrecoreds file.
