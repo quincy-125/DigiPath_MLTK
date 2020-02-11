@@ -39,7 +39,7 @@ python3 -m digipath_mltk.cli -m wsi_to_tfrecord -i CMU-1-Small-Region.svs -o res
 
 #### View the patch locations in a .tfrecoreds file.
 ```
-python3 -m digipath_mltk.cli -m tfrecord_2_masked_thumb -i CMU-1-Small-Region.svs -r CMU-1-Small-Region.tfrecords -o results
+python3 -m digipath_mltk.cli -m tfrecord_to_masked_thumb -i CMU-1-Small-Region.svs -r CMU-1-Small-Region.tfrecords -o results
 ```
 
 ` ( test data not currently available in DigiPath_MLTK repository for the following examples ) `
