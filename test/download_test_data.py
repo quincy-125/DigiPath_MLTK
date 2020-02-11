@@ -1,8 +1,12 @@
 """
+Usage from test/ with internet connection:
+
+python3 download_test_data.py
+
 OpenSlide download page:
 https://openslide.org/
 
-file_list = ['CMU-1-Small-Region.svs', 'CMU-1.svs']
+file_list = ['CMU-1-Small-Region.svs']
 
 """
 import os.path
@@ -10,7 +14,7 @@ import urllib.request
 
 def download_test_data():
     base_url = 'http://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/'
-    file_list = ['CMU-1-Small-Region.svs', 'CMU-1.svs']
+    file_list = ['CMU-1-Small-Region.svs']
     dest_dir = 'data/images'
 
     for file_name in file_list:
@@ -23,3 +27,4 @@ def download_test_data():
 
 if __name__ == '__main__':
     download_test_data()
+
