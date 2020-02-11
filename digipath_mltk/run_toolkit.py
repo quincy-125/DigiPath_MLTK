@@ -1,34 +1,36 @@
 """
-integration test file: use local src code only;
+main function for ./digipath_toolkit.py
 
-See test/Makefile to confirm coded behavior
+Usage:
+python3 digipath_mltk.py -run_directory ./ -run_file run_parameters_file.yml
+
 """
 
 def image_2_tfrecord(run_parameters):
-    from toolkit import run_imfile_to_tfrecord
+    from digipath_toolkit import run_imfile_to_tfrecord
     run_imfile_to_tfrecord(run_parameters)
 
 def tfrecord_2_masked_thumb(run_parameters):
-    from toolkit import write_tfrecord_marked_thumbnail_image
+    from digipath_toolkit import write_tfrecord_marked_thumbnail_image
     write_tfrecord_marked_thumbnail_image(run_parameters)
 
 def wsi_2_patches_dir(run_parameters):
-    from toolkit import image_file_to_patches_directory_for_image_level
+    from digipath_toolkit import image_file_to_patches_directory_for_image_level
     image_file_to_patches_directory_for_image_level(run_parameters)
 
 def write_mask_preview(run_parameters):
-    from toolkit import write_mask_preview_set
+    from digipath_toolkit import write_mask_preview_set
     write_mask_preview_set(run_parameters)
 
 def registration_functions(run_parameters):
-    from toolkit import run_registration_pairs
+    from digipath_toolkit import run_registration_pairs
     run_registration_pairs(run_parameters)
 
 def annotation_functions(run_parameters):
-    from toolkit import run_annotated_patches
+    from digipath_toolkit import run_annotated_patches
     run_annotated_patches(run_parameters)
 
-SELECT = {"wsi_to_patches": image_2_tfrecord,
+SELECT = {"image_2_tfrecord": image_2_tfrecord,
           "tfrecord_2_masked_thumb": tfrecord_2_masked_thumb,
           'wsi_2_patches_dir': wsi_2_patches_dir,
           'wrte_mask_preview_set': write_mask_preview,
@@ -39,12 +41,7 @@ SELECT = {"wsi_to_patches": image_2_tfrecord,
 
 def main():
     import sys
-
-    #                                   relative path for Makefile calling this file from test/ directory
-    sys.path.insert(0, '../digipath_mltk')
-
-    from toolkit import get_run_directory_and_run_file, get_run_parameters
-
+    from digipath_toolkit import get_run_directory_and_run_file, get_run_parameters
     run_directory, run_file = get_run_directory_and_run_file(sys.argv[1:])
     run_parameters = get_run_parameters(run_directory, run_file)
 

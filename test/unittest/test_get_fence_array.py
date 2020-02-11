@@ -3,9 +3,14 @@ from unittest import TestCase
 import numpy as np
 
 import sys
-sys.path.insert(0, '../src/python')
-from digipath_toolkit import get_fence_array
 
+try:
+    from digipath_mltk.toolkit import get_fence_array
+    print('using package installation of digipath_mltk ')
+except:
+    sys.path.insert(0, '../digipath_mltk')
+    from toolkit import get_fence_array
+    pass
 
 class Test_fence_array_output(TestCase):
 

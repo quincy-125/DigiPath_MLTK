@@ -1,31 +1,33 @@
 """
-integration test file: use local src code only;
+integration test file
 
-See test/Makefile to confirm coded behavior
+Usage for Makefile calls to confirm code before moving to pypi
+
+relative path import logic for Makefile calling this file from test/ directory
 """
 
 def image_2_tfrecord(run_parameters):
-    from toolkit import run_imfile_to_tfrecord
+    from pychunklbl.toolkit import run_imfile_to_tfrecord
     run_imfile_to_tfrecord(run_parameters)
 
 def tfrecord_2_masked_thumb(run_parameters):
-    from toolkit import write_tfrecord_marked_thumbnail_image
+    from pychunklbl.toolkit import write_tfrecord_marked_thumbnail_image
     write_tfrecord_marked_thumbnail_image(run_parameters)
 
 def wsi_2_patches_dir(run_parameters):
-    from toolkit import image_file_to_patches_directory_for_image_level
+    from pychunklbl.toolkit import image_file_to_patches_directory_for_image_level
     image_file_to_patches_directory_for_image_level(run_parameters)
 
 def write_mask_preview(run_parameters):
-    from toolkit import write_mask_preview_set
+    from pychunklbl.toolkit import write_mask_preview_set
     write_mask_preview_set(run_parameters)
 
 def registration_functions(run_parameters):
-    from toolkit import run_registration_pairs
+    from pychunklbl.toolkit import run_registration_pairs
     run_registration_pairs(run_parameters)
 
 def annotation_functions(run_parameters):
-    from toolkit import run_annotated_patches
+    from pychunklbl.toolkit import run_annotated_patches
     run_annotated_patches(run_parameters)
 
 SELECT = {"wsi_to_patches": image_2_tfrecord,
@@ -38,12 +40,8 @@ SELECT = {"wsi_to_patches": image_2_tfrecord,
           'annotations_to_tfrecord': annotation_functions}
 
 def main():
-    import sys
 
-    #                                   relative path for Makefile calling this file from test/ directory
-    sys.path.insert(0, '../digipath_mltk')
-
-    from toolkit import get_run_directory_and_run_file, get_run_parameters
+    from pychunklbl.toolkit import get_run_directory_and_run_file, get_run_parameters
 
     run_directory, run_file = get_run_directory_and_run_file(sys.argv[1:])
     run_parameters = get_run_parameters(run_directory, run_file)
