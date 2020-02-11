@@ -18,7 +18,7 @@ def parse_args():
                         choices=['wsi_to_tfrecord',
                                  'tfrecord_to_masked_thumb',
                                  'wsi_to_patches_dir',
-                                 'wrte_mask_preview_set',
+                                 'write_mask_preview_set',
                                  'registration_to_dir',
                                  'registration_to_tfrecord',
                                  'annotations_to_dir',
