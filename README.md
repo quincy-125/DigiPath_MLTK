@@ -29,29 +29,29 @@ python3 -m digipath_mltk.cli -m write_mask_preview_set -i yourpath/images/CMU-1-
 
 #### Find the patches in a wsi file and write to a directory.
 ```
-python3 -m digipath_mltk.cli -m wsi_2_patches_dir -i CMU-1-Small-Region.svs -o results
+python3 -m digipath_mltk.cli -m wsi_to_patches_dir -i CMU-1-Small-Region.svs -o results
 ```
 
 #### Find the patches in a wsi file and write to a .tfrecords file.
 ```
-python3 -m digipath_mltk.cli -m image_2_tfrecord -i CMU-1-Small-Region.svs -o results
+python3 -m digipath_mltk.cli -m wsi_to_tfrecord -i CMU-1-Small-Region.svs -o results
 ```
 
 #### View the patch locations in a .tfrecoreds file.
 ```
-python3 -m digipath_mltk.cli -m tfrecord_2_masked_thumb -i CMU-1-Small-Region.svs -r CMU-1-Small-Region.tfrecords -o results
+python3 -m digipath_mltk.cli -m tfrecord_to_masked_thumb -i CMU-1-Small-Region.svs -r CMU-1-Small-Region.tfrecords -o results
 ```
 
 ` ( test data not currently available in DigiPath_MLTK repository for the following examples ) `
 
 #### Find pairs of patches with registration offset in two wsi files and write to a directory.
 ```
-python3 -m digipath_mltk.cli -m registration_to_dir -i fixed.tiff -f float.tiff -d wsi_pair_sample_offset.csv -o results
+python3 -m digipath_mltk.cli -m registration_to_dir -i fixed.tiff -f float.tiff -D wsi_pair_sample_offset.csv -o results
 ```
 
 #### Find pairs of patches with registration offset in two wsi files and write to a tfrecords file.
 ```
-python3 -m digipath_mltk.cli -m registration_to_tfrecord -i  fixed.tiff -f float.tiff -d wsi_pair_sample_offset.csv -o results
+python3 -m digipath_mltk.cli -m registration_to_tfrecord -i  fixed.tiff -f float.tiff -D wsi_pair_sample_offset.csv -o results
 ```
 
 #### Find the patches in a wsi file defined in an annotations file with a priority file and write to a directory.
