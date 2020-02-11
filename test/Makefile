@@ -1,7 +1,7 @@
 SCRIPT = integration/call_src_only.py
 PKG_SCRIPT = integration/call_package_only.py
 RUN_DIR = ../../run_dir/
-RUN_FILES = ../data/run_files
+RUN_FILES = data/run_files
 RESULTS_DIR = $(RUN_DIR)/results
 PYTHON_NAME = python3
 
