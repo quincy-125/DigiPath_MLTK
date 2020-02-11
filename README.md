@@ -11,6 +11,11 @@ pip install digipath_mltk
 # requires python 3.5 or later
 pip3 install -r requirements.txt
 ```
+### Development install from clone in /DigiPath_MLTK/ directory:
+```
+pip3 install -r requirements.txt
+pip3 install --upgrade ../DigiPath_MLTK
+```
 
 ****
 ### Command line examples
