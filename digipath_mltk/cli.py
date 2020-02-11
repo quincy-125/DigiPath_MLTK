@@ -18,7 +18,7 @@ def parse_args():
                         choices=['wsi_2_patches_dir',
                                  'write_mask_preview_set',
                                  'wsi_to_patches',
-                                 'wrte_mask_preview_set'],
+                                 'tfrecord_2_masked_thumb'],
                         help="Method to run")
 
     parser.add_argument("-i", "--wsi_filename",
