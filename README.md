@@ -29,17 +29,17 @@ python3 -m digipath_mltk.cli -m write_mask_preview_set -i yourpath/images/CMU-1-
 
 #### Find the patches in a wsi file and write to a directory.
 ```
-python3 -m digipath_mltk.cli -m wsi_to_patches_dir -i yourpath/images/CMU-1-Small-Region.svs -o results
+python3 -m digipath_mltk.cli -m wsi_2_patches_dir -i CMU-1-Small-Region.svs -o results
 ```
 
 #### Find the patches in a wsi file and write to a .tfrecords file.
 ```
-python3 -m digipath_mltk.cli -m wsi_to_patches -i yourpath/images/CMU-1-Small-Region.svs -o results
+python3 -m digipath_mltk.cli -m wsi_to_patches -i CMU-1-Small-Region.svs -o results
 ```
 
 #### View the patch locations in a .tfrecoreds file.
 ```
-python3 -m digipath_mltk.cli -m tfrecord_2_masked_thumb -i yourpath/images//CMU-1-Small-Region.svs -r results/CMU-1-Small-Region.tfrecords -o results
+python3 -m digipath_mltk.cli -m tfrecord_2_masked_thumb -i CMU-1-Small-Region.svs -r CMU-1-Small-Region.tfrecords -o results
 ```
 
 ` ( test data not currently available in DigiPath_MLTK repository for the following examples ) `
