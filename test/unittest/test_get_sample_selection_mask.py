@@ -18,7 +18,7 @@ except:
 class Test_get_sample_selection_mask(TestCase):
 
     def setUp(self) -> None:
-        self.im_dir = os.path.abspath('../data/images')
+        self.im_dir = os.path.abspath('data/images')
 
     def test_get_sample_select_mask_otsu(self):
 
