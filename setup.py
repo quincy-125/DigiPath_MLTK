@@ -30,7 +30,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as fh:
     readme_text = fh.read()
 
 setup(name='digipath_mltk',
-	version='0.0.4',
+	version='0.0.0',
 	long_description=readme_text,
 	long_description_content_type='text/markdown',
 	author='DigiPath_MLTK development team',
