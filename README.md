@@ -46,12 +46,12 @@ python3 -m digipath_mltk.cli -m tfrecord_to_masked_thumb -i CMU-1-Small-Region.s
 
 #### Find pairs of patches with registration offset in two wsi files and write to a directory.
 ```
-python3 -m digipath_mltk.cli -m registration_to_dir -i fixed.tiff -f float.tiff -d wsi_pair_sample_offset.csv -o results
+python3 -m digipath_mltk.cli -m registration_to_dir -i fixed.tiff -f float.tiff -D wsi_pair_sample_offset.csv -o results
 ```
 
 #### Find pairs of patches with registration offset in two wsi files and write to a tfrecords file.
 ```
-python3 -m digipath_mltk.cli -m registration_to_tfrecord -i  fixed.tiff -f float.tiff -d wsi_pair_sample_offset.csv -o results
+python3 -m digipath_mltk.cli -m registration_to_tfrecord -i  fixed.tiff -f float.tiff -D wsi_pair_sample_offset.csv -o results
 ```
 
 #### Find the patches in a wsi file defined in an annotations file with a priority file and write to a directory.
