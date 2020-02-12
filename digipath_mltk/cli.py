@@ -139,6 +139,7 @@ def parse_args():
     run_parameters = dict()
     run_parameters['method'] = args.method
     run_parameters['wsi_filename'] = args.wsi_filename
+    run_parameters['wsi_floatname'] = args.wsi_floatname
     run_parameters['output_dir'] = args.output_dir
     run_parameters['class_label'] = args.class_label
     run_parameters['thumbnail_divisor'] = int(args.thumbnail_divisor)
