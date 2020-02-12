@@ -46,20 +46,20 @@ python3 -m digipath_mltk.cli -m tfrecord_to_masked_thumb -i CMU-1-Small-Region.s
 
 #### Find pairs of patches with registration offset in two wsi files and write to a directory.
 ```
-python3 -m digipath_mltk.cli -m registration_to_dir -i fixed.tiff -f float.tiff -D wsi_pair_sample_offset.csv -o results
+python3 -m digipath_mltk.cli -m registration_to_dir -i wsi_fixed.tiff -f wsi_float.tiff -D wsi_pair_sample_offset.csv -o results
 ```
 
 #### Find pairs of patches with registration offset in two wsi files and write to a tfrecords file.
 ```
-python3 -m digipath_mltk.cli -m registration_to_tfrecord -i  fixed.tiff -f float.tiff -D wsi_pair_sample_offset.csv -o results
+python3 -m digipath_mltk.cli -m registration_to_tfrecord -i  wsi_fixed.tiff -f wsi_float.tiff -D wsi_pair_sample_offset.csv -o results
 ```
 
 #### Find the patches in a wsi file defined in an annotations file with a priority file and write to a directory.
 ```
-python3 -m digipath_mltk.cli -m annotations_to_dir -i wsi_float.tff -p annotation_class_label_id.csv -a wsi_float_annotation.xml -o results
+python3 -m digipath_mltk.cli -m annotations_to_dir -i wsi_float.tiff -p wsi_float_annotation.csv -a wsi_float_annotation.xml -o results
 ```
 
 #### Find the patches in a wsi file defined in an annotations file with a priority file and write to a tfrecords file.
 ```
-python3 -m digipath_mltk.cli -m annotations_to_tfrecord -i wsi_float.tff -p annotation_class_label_id.csv -a wsi_float_annotation.xml -o results
+python3 -m digipath_mltk.cli -m annotations_to_tfrecord -i wsi_float.tiff -p wsi_float_annotation.csv -a wsi_float_annotation.xml -o results
 ```
