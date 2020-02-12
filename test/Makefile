@@ -27,6 +27,9 @@ integration_test: test_im_2_tfr test_tfr_2_mthumb test_wsi_2_patches_dir test_wr
 install_short_test: test_pkg_im_2_tfr test_pkg_tfr_2_mthumb test_pkg_wsi_2_patches_dir test_pkg_write_mask_preview
 install_long_test: test_pkg_registration_pairs_dir test_pkg_registration_pairs_tfr test_pkg_annotations_to_dir test_pkg_annotations_to_tfr 
 
+installation_test: test_pkg_im_2_tfr test_pkg_tfr_2_mthumb test_pkg_wsi_2_patches_dir test_pkg_write_mask_preview test_pkg_registration_pairs_dir test_pkg_registration_pairs_tfr test_pkg_annotations_to_dir test_pkg_annotations_to_tfr
+
+
 # # # # # # #
 # Test setup
 # # # # # # #
