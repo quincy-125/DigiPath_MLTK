@@ -1482,14 +1482,16 @@ def run_registration_pairs(run_parameters):
 
         run_parameters['offset_x'] = offset_x
         run_parameters['offset_y'] = offset_y
-        run_parameters['float_offset_x'] = -1 * offset_x
-        run_parameters['float_offset_y'] = -1 * offset_y
+
+        float_offset_x = -1 * offset_x
+        float_offset_y = -1 * offset_y
+
+    elif 'offset_x' in run_parameters and 'offset_y' in run_parameters:
+        float_offset_x = -1 * run_parameters['offset_x']
+        float_offset_y = -1 * run_parameters['offset_y']
 
     # form named parameters
     patch_size = (run_parameters['patch_width'], run_parameters['patch_height'])
-
-    float_offset_x = run_parameters['float_offset_x']
-    float_offset_y = run_parameters['float_offset_y']
 
     image_level = run_parameters['image_level']
 
