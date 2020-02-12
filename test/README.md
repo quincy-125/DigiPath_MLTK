@@ -1,6 +1,11 @@
 ## Makefile tests: for development debug or maintainance
-Clone repository, cd to (test) directory. <br>
-Change to the _test_ directory 
+Clone the repository. <br>
+Change to the _test_ directory. <br>
+If you have not downloaded the test data previously then run this python script with an internet connection: <br>
+```
+python3 download_test_data.py
+```
+# Test scripts available in the Makefile:
 #### _Note:_
 If your __*python3*__ command is __*python*__ you must edit the __*PYTHON_NAME*__ variable at the top of the Makefile
 ****
