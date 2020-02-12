@@ -1,7 +1,7 @@
 #                       Parameter set for make target: test_wsi_2_patches_dir or test_wsi_2_patches_dir_python2
 
 # method:               wsi_2_patches_dir
-method:                 wsi_2_patches_dir
+method:                 wsi_to_patches_dir
 
 # wsi_filename:         file name (with valid path)
 wsi_filename:           data/images/CMU-1-Small-Region.svs
