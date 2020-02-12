@@ -431,7 +431,7 @@ def get_strided_patches_dict_for_image_level(run_parameters):
     else:
         patch_stride = 1.0
 
-    if 'wsi_floatname' in run_parameters:
+    if 'wsi_floatname' in run_parameters and not run_parameters['wsi_floatname'] is None:
         os_im_2_obj = openslide.OpenSlide(run_parameters['wsi_floatname'])
         arry_2_x_lngth, arry_2_y_lngth = os_im_2_obj.level_dimensions[image_level]
         os_im_2_obj.close()

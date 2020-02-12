@@ -159,7 +159,12 @@ def parse_args():
     run_parameters['xml_file_name'] = args.xml_file_name
     run_parameters['csv_file_name'] = args.csv_file_name
 
-    return run_parameters
+    clean_run_parameters = dict()
+    for k, v in run_parameters.items():
+        if not v is None:
+            clean_run_parameters[k] = v
+            
+    return clean_run_parameters
 
 
 if __name__ == "__main__":
