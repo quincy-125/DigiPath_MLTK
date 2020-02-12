@@ -2,7 +2,7 @@
 Clone repository, cd to (test) directory. <br>
 Change to the _test_ directory 
 #### _Note:_
-If your _python3_ command is _python_ you must edit the _PYTHON_NAME_ variable at the top of the Makefile
+If your __*python3*__ command is __*python*__ you must edit the __*PYTHON_NAME*__ variable at the top of the Makefile
 ****
 ### Unit Tests:
 ```
