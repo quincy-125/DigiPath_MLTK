@@ -237,7 +237,14 @@ def check_patch_in_bounds(x, y, X_dim, Y_dim):
 
 def im_pair_hori(im_0, im_1):
     """ Usage: new_im = im_pair_hori(im_0, im_1)
-            combine a list of PIL images horizontaly
+    combine a pair of PIL images horizontaly
+
+    Args:
+        im_0:       a PIL image
+        im_1:       a PIL image
+
+    Returns:
+        new_im:     im_0 and im_1 side by side
     """
     w0 = im_0.size[0]
     w = w0 + im_1.size[0]
@@ -399,9 +406,23 @@ def get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end):
 
 def get_strided_patches_dict_for_image_level(run_parameters):
     """ Usage: strided_patches_dict = get_strided_patches_dict_for_image_level(run_parameters)
-    Args:
 
+    Args:
+        run_parameters:         keys()
+                                    wsi_filename
+                                    thumbnail_divisor
+                                    patch_height
+                                    patch_width
+                                    (image_level) = 0
+                                    (offset_x) = 0
+                                    (offset_y) = 0
+                                    (patch_stride_fraction) = 1.0
+                                    (wsi_floatname)
     Returns:
+        strided_patches_dict:       {   'small_im': small_im,
+                                        'cols_fence_array': cols_fence_array,
+                                        'rows_fence_array': rows_fence_array,
+                                        'thumbnail_divisor': thumbnail_divisor  }
 
     """
     wsi_filename = run_parameters['wsi_filename']
@@ -494,6 +515,7 @@ def get_patch_location_array_for_image_level(run_parameters):
                                 patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              minimimum sum of thresholded image (default = 0)
                                 image_level:            openslide image pyramid level 0,1,2,...
+                                
     Returns:
         patch_location_array:   [[x, y], [x, y],... ]   n_pairs x 2 numpy array
 
