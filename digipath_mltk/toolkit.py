@@ -25,9 +25,9 @@ from tensorflow import io as tf_io
 import openslide
 
 MIN_STRIDE_PIXELS = 3
+
 """
-                            parser utility: 
-"""
+                            parser utilities                                                    """
 
 def get_run_directory_and_run_file(args):
     """ Parse the input arguments to get the run_directory and run_file
@@ -69,8 +69,7 @@ def get_run_parameters(run_directory, run_file):
     return run_parameters
 
 """
-                            notebook & development convenience
-"""
+                            notebook & development convenience                                  """
 
 def get_file_size_ordered_dict(data_dir, file_type_list):
     """ Usage:  file_size_ordered_dict = get_file_size_ordered_dict
@@ -157,8 +156,7 @@ def lineprint_level_sizes_dict(image_file_name):
 
 
 """
-                            patch wrangling
-"""
+                            patch wrangling                                                     """
 
 def dict_to_patch_name(patch_image_name_dict):
     """ Usage: patch_name = dict_to_patch_name(patch_image_name_dict)
@@ -502,6 +500,7 @@ def get_strided_patches_dict_for_image_level(run_parameters):
 
     return strided_patches_dict
 
+
 def get_patch_location_array_for_image_level(run_parameters):
     """ Usage: patch_location_array = get_patch_location_array_for_image_level(run_parameters)
         using 'patch_select_method", find all upper left corner locations of patches
@@ -567,9 +566,6 @@ def get_patch_location_array_for_image_level(run_parameters):
     #                   patch locations at image_level scale   [(x, y), (x, y),...]     -- Scaled to image_level
     return patch_location_array
 
-"""
-                            patch image generators
-"""
 
 class PatchImageGenerator():
     """
@@ -654,8 +650,8 @@ class PatchImageGenerator():
             #                   This is standard practice for python generators -
             raise StopIteration()
 
-""" Input conditioning """
 
+"""     Input conditioning                                                                      """
 
 def patch_name_parts_limit(name_str, space_replacer=None):
     """ Usage:  par_name = patch_name_parts_limit(name_str, <space_replacer>)
@@ -716,12 +712,11 @@ def patch_name_parts_clean_with_warning(file_name_base, class_label, show_warnin
     return name_base_clean, class_label_clean
 
 
-"""                         Use Case 1 
+"""                         Use Case 1 and Use Case 4
 
-        Givin a WSI (Whole Slide Image) and a label, export patches into TFRecords or Folders (raw images).
-        
-        
-"""
+        Givin a WSI (Whole Slide Image) and a label, 
+        1) export patches into TFRecords 
+        4) export patches into Folders                                                          """
 
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -882,11 +877,11 @@ def wsi_file_to_patches_tfrecord(run_parameters):
     return tfrecord_file_name
 
 
-def run_imfile_to_tfrecord(run_parameters):
-    """ read the run_parameters dictionary & execute function: svs_file_to_patches_tfrecord with those
+def image_file_to_patches_directory_for_image_level(run_parameters):
+    """ Usage: image_file_to_patches_directory_for_image_level(run_parameters)
 
     Args:
-        run_parameters:     with keys:
+        run_parameters:         (python dict with these keys)
                                 wsi_filename:           file name (with valid path)
                                 output_dir:             writeable directory for the tfrecord
                                 class_label:            label for all images
@@ -897,23 +892,63 @@ def run_imfile_to_tfrecord(run_parameters):
                                 patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              minimimum sum of thresholded image (default = 0)
 
-    Returns:
-        (writes tfrecord file - prints filename if successful)
-
+    Returns:                    None - writes images to output_dir (possibly many)
+                                (prints number of images written)
     """
-    tfrecord_file_name = wsi_file_to_patches_tfrecord(run_parameters)
-    if os.path.isfile(tfrecord_file_name):
-        (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(tfrecord_file_name)
-        if size > 0:
-            print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
+    # explicitly name the input parameters
+    image_file_name = run_parameters['wsi_filename']
+    if os.path.isfile(image_file_name) == False:
+        print('\n\n\tFile not found:\n\t%s\n\n'%(image_file_name))
+        return
+    output_dir = run_parameters['output_dir']
+    class_label = run_parameters['class_label']
+
+    if 'file_ext' in run_parameters:
+        file_ext = run_parameters['file_ext']
+        if file_ext[0] != '.':
+            file_ext = '.' + file_ext
+    else:
+        file_ext = '.jpg'
+
+    # check / ceate the output directory
+    if os.path.isdir(output_dir) == False:
+        print('creating output directory:\n%s\n' % (output_dir))
+        os.makedirs(output_dir)
+
+    # prepare name generation dictionary
+    _, file_name_base = os.path.split(image_file_name)
+    file_name_base, _ = os.path.splitext(file_name_base)
+
+    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user input parameter changed
+    file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
+
+    patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
+
+    # get the patch-image generator object
+    patch_generator_obj = PatchImageGenerator(run_parameters)
+    patch_number = -2
+    while True:
+        # iterate the patch_generator_obj untill empty
+        try:
+            patch_dict = patch_generator_obj.next_patch()
+            patch_image_name_dict['location_x'] = patch_dict['image_level_x']
+            patch_image_name_dict['location_y'] = patch_dict['image_level_y']
+            patch_name = dict_to_patch_name(patch_image_name_dict)
+            patch_full_name = os.path.join(output_dir, patch_name)
+            # write the file
+            patch_dict['patch_image'].convert('RGB').save(patch_full_name)
+            patch_number = patch_dict['patch_number']
+
+        except StopIteration:
+            print('%i images written' % (patch_number + 1))
+            break
+
 
 """                             Use Case 2
 
-        Givin a WSI (Whole Slide Image) and an Annotation File, export patches into TFRecords.
-        
+    Givin a WSI (Whole Slide Image) and an Annotation File, export patches into TFRecords.
         1.  Annotation File must follow QuPath Annotation convention
-        2.  Requires dictionary for class labels 
-"""
+        2.  Requires dictionary for class labels                                                """
 
 def get_priority_ordered_labels(label_id_priority_fname):
     """ ordered_priority_dict = get_priority_ordered_labels(label_id_priority_fname)
@@ -1468,10 +1503,7 @@ def run_annotated_patches(run_parameters):
 """                             Use Case 3 
 
         Givin a WSI and another WSI, do image registration, export pair of patches into TFRecords.
-        
-        One Whole Slide Image will be 'fixed' and the other WSI will be the 'float' image.
-"""
-
+        One Whole Slide Image will be 'fixed' and the other WSI will be the 'float' image.      """
 
 def run_registration_pairs(run_parameters):
     """ Usage:  registration_pair_to_directory(run_parameters)
@@ -1657,113 +1689,8 @@ def run_registration_pairs(run_parameters):
         pass
 
 
-
-"""                             Use Case 4 
-
-        Givin a WSI & TFRecord, generate a masked Thumbnail 
-        
-        (graphic representation of the WSI in the TFRecord)
 """
-
-def image_file_to_patches_directory_for_image_level(run_parameters):
-    """ Usage: image_file_to_patches_directory_for_image_level(run_parameters)
-
-    Args:
-        run_parameters:         (python dict with these keys)
-                                wsi_filename:           file name (with valid path)
-                                output_dir:             writeable directory for the tfrecord
-                                class_label:            label for all images
-                                patch_height:           patch size = (patch_width, patch_height)
-                                patch_width:            patch size = (patch_width, patch_height)
-                                file_ext:               default is '.jpg' ('.png') was also tested
-                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
-                                threshold:              minimimum sum of thresholded image (default = 0)
-
-    Returns:                    None - writes images to output_dir (possibly many)
-                                (prints number of images written)
-    """
-    # explicitly name the input parameters
-    image_file_name = run_parameters['wsi_filename']
-    if os.path.isfile(image_file_name) == False:
-        print('\n\n\tFile not found:\n\t%s\n\n'%(image_file_name))
-        return
-    output_dir = run_parameters['output_dir']
-    class_label = run_parameters['class_label']
-
-    if 'file_ext' in run_parameters:
-        file_ext = run_parameters['file_ext']
-        if file_ext[0] != '.':
-            file_ext = '.' + file_ext
-    else:
-        file_ext = '.jpg'
-
-    # check / ceate the output directory
-    if os.path.isdir(output_dir) == False:
-        print('creating output directory:\n%s\n' % (output_dir))
-        os.makedirs(output_dir)
-
-    # prepare name generation dictionary
-    _, file_name_base = os.path.split(image_file_name)
-    file_name_base, _ = os.path.splitext(file_name_base)
-
-    # sanitize case_id, class_label and file_ext so that they may be decoded - warn user input parameter changed
-    file_name_base, class_label = patch_name_parts_clean_with_warning(file_name_base, class_label)
-
-    patch_image_name_dict = {'case_id': file_name_base, 'class_label': class_label, 'file_ext': file_ext}
-
-    # get the patch-image generator object
-    patch_generator_obj = PatchImageGenerator(run_parameters)
-    patch_number = -2
-    while True:
-        # iterate the patch_generator_obj untill empty
-        try:
-            patch_dict = patch_generator_obj.next_patch()
-            patch_image_name_dict['location_x'] = patch_dict['image_level_x']
-            patch_image_name_dict['location_y'] = patch_dict['image_level_y']
-            patch_name = dict_to_patch_name(patch_image_name_dict)
-            patch_full_name = os.path.join(output_dir, patch_name)
-            # write the file
-            patch_dict['patch_image'].convert('RGB').save(patch_full_name)
-            patch_number = patch_dict['patch_number']
-
-        except StopIteration:
-            print('%i images written' % (patch_number + 1))
-            break
-
-
-"""
-                            visualization | examination
-"""
-def write_tfrecord_marked_thumbnail_image(run_parameters):
-    """ Usage: write_tfrecord_marked_thumbnail_image(run_parameters)
-    Args:
-        run_parameters:         (python dict with these keys)
-                                tfrecord_file_name:     tfrecord filename created from the wsi_filename
-                                wsi_filename:           file name (with valid path)
-                                output_dir:             writeable directory for the tfrecord
-                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                border_color:           red, blue, green
-
-                                (Optional)
-                                image_level:            defaults to 0
-                                output_file_name:       defaults to output_dir + wsi_filename (base) + .jpg
-
-    Returns:                    None - writes images to output_dir (possibly many)
-                                (prints number of images written)
-    """
-    output_dir = run_parameters['output_dir']
-    if 'output_file_name' in run_parameters:
-        output_file_name = os.path.join(output_dir, run_parameters['output_file_name'])
-    else:
-        wsi_filename = run_parameters['wsi_filename']
-        _, wsi_file_base = os.path.split(wsi_filename)
-        wsi_file_base, _ = os.path.splitext(wsi_file_base)
-        output_file_name = os.path.join(output_dir, wsi_file_base + '_thumb_preview.jpg')
-    thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
-    thumb_preview.save(output_file_name)
-    print('tfrecord thumnail preview saved to:', output_file_name)
-
+                            visualization | examination                                         """
 
 def tf_record_to_marked_thumbnail_image(run_parameters):
     """ Usage: thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
@@ -1840,6 +1767,37 @@ def tf_record_to_marked_thumbnail_image(run_parameters):
     return thumb_preview
 
 
+def write_tfrecord_marked_thumbnail_image(run_parameters):
+    """ Usage: write_tfrecord_marked_thumbnail_image(run_parameters)
+
+    Args:
+        run_parameters:         (python dict with these keys)
+                                tfrecord_file_name:     tfrecord filename created from the wsi_filename
+                                wsi_filename:           file name (with valid path)
+                                output_dir:             writeable directory for the tfrecord
+                                thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
+                                border_color:           red, blue, green
+
+                                (Optional)
+                                image_level:            defaults to 0
+                                output_file_name:       defaults to output_dir + wsi_filename (base) + .jpg
+
+    Returns:                    None - writes images to output_dir (possibly many)
+                                (prints number of images written)
+    """
+    output_dir = run_parameters['output_dir']
+    if 'output_file_name' in run_parameters:
+        output_file_name = os.path.join(output_dir, run_parameters['output_file_name'])
+    else:
+        wsi_filename = run_parameters['wsi_filename']
+        _, wsi_file_base = os.path.split(wsi_filename)
+        wsi_file_base, _ = os.path.splitext(wsi_file_base)
+        output_file_name = os.path.join(output_dir, wsi_file_base + '_thumb_preview.jpg')
+    thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
+    thumb_preview.save(output_file_name)
+    print('tfrecord thumnail preview saved to:', output_file_name)
+
+
 def get_patch_locations_preview_image_for_image_level(run_parameters):
     """ Usage:
     mask_image, thumb_preview, patch_location_array = get_patch_locations_preview_image_for_image_level(run_parameters)
@@ -1857,9 +1815,11 @@ def get_patch_locations_preview_image_for_image_level(run_parameters):
 
                             Optional keys()
                                 border_color:           patch-box representation color red, blue, green, ...
-    Returns:
+
+    Returns:                (PIL images)
         mask_image:             black & white image of the mask
         thumb_preview:          thumbnail image with patch locations marked
+                            (python list of tuples)
         patch_location_array:   list of patch locations used [(row, col), (row, col),... ]
 
     """
@@ -1930,11 +1890,12 @@ def write_mask_preview_set(run_parameters):
                                 patch_width:            patch size = (patch_width, patch_height)
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
                                 patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+
     Returns:
         None:               Writes three files:
-                                wsi_basename_marked_thumb
-                                wsi_basename_mask
-                                wsi_basename_patch_locations
+                                wsi_basename_marked_thumb.jpg
+                                wsi_basename_mask.jpg
+                                wsi_basename_patch_locations.tsv
     """
     output_dir = run_parameters['output_dir']
     wsi_filename = run_parameters['wsi_filename']
