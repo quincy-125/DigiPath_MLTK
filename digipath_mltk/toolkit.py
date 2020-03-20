@@ -13,7 +13,7 @@ import pandas as pd
 import yaml
 
 from skimage.filters import threshold_otsu
-from skimage.color import rgb2lab
+from skimage.color import rgb2lab, rgb2hed
 
 from PIL import Image
 from PIL import ImageDraw
@@ -306,7 +306,7 @@ def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None
 
     Args:
         small_im:               selection image
-        patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+        patch_select_method:    'threshold_rgb2hed' or'threshold_rgb2lab' or 'threshold_otsu'
 
     Returns:
         mask_im:                numpy boolean matrix size of small_im
@@ -316,6 +316,11 @@ def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None
         rgb2lab_threshold = run_parameters['rgb2lab_threshold']
     else:
         rgb2lab_threshold = 80
+        
+    if not run_parameters is None and 'rgb2hed_threshold' in run_parameters:
+        rgb2hed_threshold = run_parameters['rgb2hed_threshold']
+    else:
+        rgb2hed_threshold = 0.17
     #                   initialize the return value
     mask_im = None
 
@@ -326,6 +331,13 @@ def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None
         np_img = np_img[:, :, 0]
         mask_im = np.array(np_img) < thresh
 
+    elif patch_select_method == 'threshold_rgb2hed':
+        thresh = rgb2hed_threshold
+        np_img = np.array(small_im.convert('RGB'))
+        np_img = rgb2hed(np_img)
+        np_img = np_img[:, :, 0]
+        mask_im = np.array(np_img) > thresh
+        
     elif patch_select_method == 'threshold_otsu':
         grey_thumbnail = np.array(small_im.convert('L'))
         thresh = threshold_otsu(grey_thumbnail)
@@ -511,7 +523,7 @@ def get_patch_location_array_for_image_level(run_parameters):
                                 patch_height:           patch size = (patch_width, patch_height)
                                 patch_width:            patch size = (patch_width, patch_height)
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                patch_select_method:    'threshold_rgb2hed' or'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              minimimum sum of thresholded image (default = 0)
                                 image_level:            openslide image pyramid level 0,1,2,...
                                 
@@ -584,7 +596,7 @@ class PatchImageGenerator():
                                 patch_height:           patch size = (patch_width, patch_height)
                                 patch_width:            patch size = (patch_width, patch_height)
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                patch_select_method:    'threshold_rgb2hed' or 'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              minimimum sum of thresholded image (default = 0)
                                 image_level:            openslide pyramid images level
     yields:
@@ -889,7 +901,7 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
                                 patch_width:            patch size = (patch_width, patch_height)
                                 file_ext:               default is '.jpg' ('.png') was also tested
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                patch_select_method:    'threshold_rgb2hed' or'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              minimimum sum of thresholded image (default = 0)
 
     Returns:                    None - writes images to output_dir (possibly many)
@@ -1809,7 +1821,7 @@ def get_patch_locations_preview_image_for_image_level(run_parameters):
                                 patch_height:           patch size = (patch_width, patch_height)
                                 patch_width:            patch size = (patch_width, patch_height)
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                patch_select_method:    'threshold_rgb2hed' or 'threshold_rgb2lab' or 'threshold_otsu'
                                 threshold:              sum of thresholded image minimimum (default = 0)
                                 image_level:            openslide image pyramid level 0,1,2,...
 
@@ -1889,7 +1901,7 @@ def write_mask_preview_set(run_parameters):
                                 patch_height:           patch size = (patch_width, patch_height)
                                 patch_width:            patch size = (patch_width, patch_height)
                                 thumbnail_divisor:      wsi_image full size divisor to create thumbnail image
-                                patch_select_method:    'threshold_rgb2lab' or 'threshold_otsu'
+                                patch_select_method:    'threshold_rgb2hed' or 'threshold_rgb2lab' or 'threshold_otsu'
 
     Returns:
         None:               Writes three files:

@@ -57,8 +57,8 @@ def parse_args():
 
     parser.add_argument("-P", "--patch_select_method",
                         dest='patch_select_method',
-                        default='threshold_rgb2lab',
-                        choices=['threshold_rgb2lab', 'threshold_otsu'],
+                        default='threshold_rgb2hed',
+                        choices=['threshold_rgb2lab','threshold_rgb2hed', 'threshold_otsu'],
                         help="Tissue detection method")
 
     parser.add_argument("-T", "--rgb2lab_threshold",
@@ -66,6 +66,12 @@ def parse_args():
                         default=80,
                         help="Detection threshold for rgb2lab detector")
 
+
+    parser.add_argument("-H", "--rgb2lhed_threshold",
+                        dest='rgb2hed_threshold',
+                        default=0.17,
+                        help="Detection threshold for rgb2lab detector")
+                        
     parser.add_argument("-e", "--image_level",
                         dest='image_level',
                         default=0,
@@ -147,6 +153,7 @@ def parse_args():
     run_parameters['patch_width'] = int(args.pixel_hw)
     run_parameters['patch_select_method'] = args.patch_select_method
     run_parameters['rgb2lab_threshold'] = int(args.rgb2lab_threshold)
+    run_parameters['rgb2hed_threshold'] = float(args.rgb2hed_threshold)
     run_parameters['image_level'] = int(args.image_level)
     run_parameters['file_ext'] = args.file_ext
     run_parameters['threshold'] = int(args.threshold)
