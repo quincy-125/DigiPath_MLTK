@@ -7,7 +7,7 @@ import os
 import tempfile
 from collections import defaultdict, OrderedDict
 import argparse
-
+import sys
 import numpy as np
 import pandas as pd
 import yaml
@@ -335,7 +335,7 @@ def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None
         thresh = rgb2hed_threshold
         np_img = np.array(small_im.convert('RGB'))
         np_img = rgb2hed(np_img)
-        np_img = np_img[:, :, 0]
+        np_img = np_img[:, :, 1]
         mask_im = np.array(np_img) > thresh
         
     elif patch_select_method == 'threshold_otsu':

@@ -47,7 +47,7 @@ def parse_args():
 
     parser.add_argument("-d", "--thumbnail_divisor",
                         dest='thumbnail_divisor',
-                        default=10,
+                        default=50,
                         help="Full size divisor to create thumbnail image")
 
     parser.add_argument("-S", "--pixel_hw",
@@ -69,7 +69,7 @@ def parse_args():
 
     parser.add_argument("-H", "--rgb2lhed_threshold",
                         dest='rgb2hed_threshold',
-                        default=0.17,
+                        default=0.18,
                         help="Detection threshold for rgb2lab detector")
                         
     parser.add_argument("-e", "--image_level",
