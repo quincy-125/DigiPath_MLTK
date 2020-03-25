@@ -316,11 +316,11 @@ def get_sample_selection_mask(small_im, patch_select_method, run_parameters=None
         rgb2lab_threshold = run_parameters['rgb2lab_threshold']
     else:
         rgb2lab_threshold = 80
-        
+
     if not run_parameters is None and 'rgb2hed_threshold' in run_parameters:
         rgb2hed_threshold = run_parameters['rgb2hed_threshold']
     else:
-        rgb2hed_threshold = 0.17
+        rgb2hed_threshold = 0.18
     #                   initialize the return value
     mask_im = None
 
@@ -550,7 +550,7 @@ def get_patch_location_array_for_image_level(run_parameters):
     thumbnail_divisor = strided_patches_dict['thumbnail_divisor']
 
     #                   get the binary mask as a measure of image region content
-    mask_im = get_sample_selection_mask(small_im, patch_select_method).astype(np.int)
+    mask_im = get_sample_selection_mask(small_im, patch_select_method, run_parameters=run_parameters).astype(np.int)
 
     #                                       zip & rescale Fence Arrays to mask image size
     #                   iterator for rows:  (top_row, bottom_row, full_scale_row_number)
@@ -1229,7 +1229,7 @@ def get_priority_location_arrays_dict(run_parameters):
     os_im_obj.close()
 
     #                           Get initial mask by pre-annotation methods
-    mask_im = get_sample_selection_mask(thumbnail_image, patch_select_method, run_parameters=None)
+    mask_im = get_sample_selection_mask(thumbnail_image, patch_select_method, run_parameters=run_parameters)
 
     #                           Read the xml and csv files into priorities: coordinates & co dict
     priority_dict = get_ordered_priority_label_coords_dict(xml_file_name, csv_file_name)
@@ -1869,7 +1869,7 @@ def get_patch_locations_preview_image_for_image_level(run_parameters):
     #                     OpenSlide close                      #
 
     #                   get the mask image for this patch_select_method
-    mask_image = get_sample_selection_mask(thumb_preview, patch_select_method)
+    mask_image = get_sample_selection_mask(thumb_preview, patch_select_method, run_parameters=run_parameters)
     #                   convert it from a binary matrix to a viewable image
     mask_image = tip.Image.fromarray(np.uint8(mask_image * 255), 'L')
 

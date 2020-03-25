@@ -67,7 +67,7 @@ def parse_args():
                         help="Detection threshold for rgb2lab detector")
 
 
-    parser.add_argument("-H", "--rgb2lhed_threshold",
+    parser.add_argument("-H", "--rgb2hed_threshold",
                         dest='rgb2hed_threshold',
                         default=0.18,
                         help="Detection threshold for rgb2lab detector")
