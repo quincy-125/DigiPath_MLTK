@@ -11,7 +11,7 @@ import sys
 import numpy as np
 import pandas as pd
 import yaml
-
+import io
 from skimage.filters import threshold_otsu
 from skimage.color import rgb2lab, rgb2hed
 
@@ -765,7 +765,7 @@ def tf_imp_dict(image_string, label, image_name, class_label='class_label'):
                'label': _int64_feature(label),
                'class_label': _bytes_feature(class_label),
                'image_name': _bytes_feature(image_name),
-               'image_raw': _bytes_feature(image_string)}
+               'image/encoded': _bytes_feature(image_string)}
 
     return tf.train.Example(features=tf.train.Features(feature=feature))
 
@@ -787,7 +787,7 @@ def _parse_tf_imp_dict(example_proto):
         'label': tf.io.FixedLenFeature([], tf.int64),
         'class_label': tf.io.FixedLenFeature([], tf.string),
         'image_name': tf.io.FixedLenFeature([], tf.string),
-        'image_raw': tf.io.FixedLenFeature([], tf.string)}
+        'image/encoded': tf.io.FixedLenFeature([], tf.string)}
 
     return tf.io.parse_single_example(example_proto, image_feature_description)
 
@@ -853,33 +853,40 @@ def wsi_file_to_patches_tfrecord(run_parameters):
         while True:
             try:
                 patch_dict = patch_generator.next_patch()
-                x = patch_dict['image_level_x']
-                y = patch_dict['image_level_y']
-                patch_image_name_dict['location_x'] = x
-                patch_image_name_dict['location_y'] = y
-                patch_name = dict_to_patch_name(patch_image_name_dict)
+                imgByteArr = io.BytesIO()
+                patch_dict['patch_image'].save(imgByteArr, format='PNG')
+                size_bytes = imgByteArr.tell()
+                #print(size_bytes)
+                #sys.exit(0)
+                if size_bytes>9000:
+                    print(size_bytes)
+                    x = patch_dict['image_level_x']
+                    y = patch_dict['image_level_y']
+                    patch_image_name_dict['location_x'] = x
+                    patch_image_name_dict['location_y'] = y
+                    patch_name = dict_to_patch_name(patch_image_name_dict)
 
-                image_string = patch_dict['patch_image'].convert('RGB')
+                    image_string = patch_dict['patch_image'].convert('RGB')
 
-                tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-                try:
-                    image_string.save(tmp.name)
-                    image_string = open(tmp.name, 'rb').read()
+                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                    try:
+                        image_string.save(tmp.name)
+                        image_string = open(tmp.name, 'rb').read()
 
-                except:
-                    print('Image write-read exception with patch # %i, named:\n%s' % (seq_number, patch_name))
-                    pass
+                    except:
+                        print('Image write-read exception with patch # %i, named:\n%s' % (seq_number, patch_name))
+                        pass
 
-                finally:
-                    os.unlink(tmp.name)
-                    tmp.close()
+                    finally:
+                        os.unlink(tmp.name)
+                        tmp.close()
 
-                tf_example_obj = tf_imp_dict(image_string,
-                                             label=seq_number,
-                                             image_name=bytes(patch_name, 'utf8'),
-                                             class_label=bytes(class_label, 'utf8'))
+                    tf_example_obj = tf_imp_dict(image_string,
+                                                 label=int(class_label),
+                                                 image_name=bytes(patch_name, 'utf8'),
+                                                 class_label=bytes(class_label, 'utf8'))
 
-                writer.write(tf_example_obj.SerializeToString())
+                    writer.write(tf_example_obj.SerializeToString())
                 seq_number += 1
 
             except StopIteration:
@@ -1498,9 +1505,9 @@ def run_annotated_patches(run_parameters):
                     finally:
                         os.unlink(tmp.name)
                         tmp.close()
-
+                    #label=seq_number
                     tf_example_obj = tf_imp_dict(image_string,
-                                                 label=seq_number,
+                                                 label=int(class_label),
                                                  image_name=bytes(patch_name, 'utf8'),
                                                  class_label=bytes(class_label, 'utf8'))
 
@@ -1674,9 +1681,9 @@ def run_registration_pairs(run_parameters):
                         finally:
                             os.unlink(tmp.name)
                             tmp.close()
-
+                        #label=seq_number
                         tf_example_obj = tf_imp_dict(image_string,
-                                                     label=seq_number,
+                                                     label=int(class_label),
                                                      image_name=bytes(patch_name, 'utf8'),
                                                      class_label=bytes(class_label, 'utf8'))
 
