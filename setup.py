@@ -1,18 +1,29 @@
 """
+
+https://packaging.python.org/tutorials/packaging-projects/
+
 # 						Development install notes
 
 # Simple: development install from local src referencing directory with setup.py
 pip3 install --upgrade ../DigiPath_MLTK
 
-# Create dist files:
 #				install packages needed to build distribution files
 pip3 install --upgrade setuptools wheel
 
+#				install package needed to upload the distribution
+python3 -m pip install --user --upgrade twine
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create dist files:
 #				build package in the dist/ directory
 python3 setup.py sdist bdist_wheel
 
-#				install package needed to upload the distribution
-python3 -m pip install --user --upgrade twine
+# upload to pypi account
+python3 -m twine upload dist/*
+
+# install
+pip3 install --upgrade digipath_mltk
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Upload distribution files to PYPI TEST SITE (allows viewing of pypi install / doc page for development):
 #				username and password required: use __token__ and the API token created in your account
