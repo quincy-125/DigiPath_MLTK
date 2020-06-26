@@ -11,6 +11,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import yaml
+from keras_applications import resnet50
 
 from skimage.filters import threshold_otsu
 from skimage.color import rgb2lab
@@ -28,6 +29,7 @@ MIN_STRIDE_PIXELS = 3
 
 """
                             parser utilities                                                    """
+
 
 def get_run_directory_and_run_file(args):
     """ Parse the input arguments to get the run_directory and run_file
@@ -68,8 +70,10 @@ def get_run_parameters(run_directory, run_file):
 
     return run_parameters
 
+
 """
                             notebook & development convenience                                  """
+
 
 def get_file_size_ordered_dict(data_dir, file_type_list):
     """ Usage:  file_size_ordered_dict = get_file_size_ordered_dict
@@ -158,6 +162,7 @@ def lineprint_level_sizes_dict(image_file_name):
 """
                             patch wrangling                                                     """
 
+
 def dict_to_patch_name(patch_image_name_dict):
     """ Usage: patch_name = dict_to_patch_name(patch_image_name_dict)
         convert the dictionary into a file name string
@@ -177,11 +182,11 @@ def dict_to_patch_name(patch_image_name_dict):
         patch_image_name_dict['file_ext'] = '.' + patch_image_name_dict['file_ext']
 
     patch_name = patch_image_name_dict['case_id']
-    patch_name += '_%i'%patch_image_name_dict['location_x']
-    patch_name += '_%i'%patch_image_name_dict['location_y'] 
-    patch_name += '_%s'%patch_image_name_dict['class_label']
-    patch_name += '%s'%patch_image_name_dict['file_ext']
-    
+    patch_name += '_%i' % patch_image_name_dict['location_x']
+    patch_name += '_%i' % patch_image_name_dict['location_y']
+    patch_name += '_%s' % patch_image_name_dict['class_label']
+    patch_name += '%s' % patch_image_name_dict['file_ext']
+
     return patch_name
 
 
@@ -205,12 +210,12 @@ def patch_name_to_dict(patch_file_name):
 
     name_field_list = name_part.split('_')
 
-    patch_image_name_dict = {'case_id': name_field_list[0], 
-                             'location_x': int(name_field_list[1]), 
-                             'location_y': int(name_field_list[2]), 
-                             'class_label': name_field_list[3], 
+    patch_image_name_dict = {'case_id': name_field_list[0],
+                             'location_x': int(name_field_list[1]),
+                             'location_y': int(name_field_list[2]),
+                             'class_label': name_field_list[3],
                              'file_ext': '.' + file_ext}
-    
+
     return patch_image_name_dict
 
 
@@ -256,6 +261,7 @@ def im_pair_hori(im_0, im_1):
     new_im.paste(im_1, box)
 
     return new_im
+
 
 def get_fence_array(patch_length, overall_length):
     """ See New Function: fence_array = get_strided_fence_array(patch_len, patch_stride, arr_start, arr_end)
@@ -458,7 +464,7 @@ def get_strided_patches_dict_for_image_level(run_parameters):
         arry_2_y_lngth = None
 
     #       assure minimum stride s.t. arrays advance by at least MIN_STRIDE_PIXELS
-    patch_stride = max(patch_stride, (MIN_STRIDE_PIXELS / min(patch_width, patch_height) ) )
+    patch_stride = max(patch_stride, (MIN_STRIDE_PIXELS / min(patch_width, patch_height)))
 
     #                     OpenSlide Open                      #
     os_im_obj = openslide.OpenSlide(wsi_filename)
@@ -559,7 +565,6 @@ def get_patch_location_array_for_image_level(run_parameters):
 
             #           select this patch if the selected patch pixels add to more than threshold (default = 0)
             if (mask_im[tmb_row_top:tmb_row_bot, tmb_col_lft:tmb_col_rgt]).sum() > threshold:
-
                 #       add the image level scale row and column of the upper left corner to the list
                 patch_location_array.append((col_n, row_n))
 
@@ -653,6 +658,7 @@ class PatchImageGenerator():
 
 """     Input conditioning                                                                      """
 
+
 def patch_name_parts_limit(name_str, space_replacer=None):
     """ Usage:  par_name = patch_name_parts_limit(name_str, <space_replacer>)
                 clean up name_str such that it may be decoded with
@@ -718,6 +724,7 @@ def patch_name_parts_clean_with_warning(file_name_base, class_label, show_warnin
         1) export patches into TFRecords 
         4) export patches into Folders                                                          """
 
+
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -753,7 +760,8 @@ def tf_imp_dict(image_string, label, image_name, class_label='class_label'):
                'label': _int64_feature(label),
                'class_label': _bytes_feature(class_label),
                'image_name': _bytes_feature(image_name),
-               'image_raw': _bytes_feature(image_string)}
+               'image_raw': _bytes_feature(image_string),
+               'image_feature': _float_feature(patch_feature_extraction(image_string, input_shape=image_shape))}
 
     return tf.train.Example(features=tf.train.Features(feature=feature))
 
@@ -791,6 +799,65 @@ def get_iterable_tfrecord(tfr_name):
         iterable_tfrecord:  an iterable TFRecordDataset mapped to _parse_tf_imp_dict
     """
     return tf.data.TFRecordDataset(tfr_name).map(_parse_tf_imp_dict)
+
+
+def patch_feature_extraction(image_string, input_shape=(512, 512, 3)):
+    """
+    Args:
+        image_string:  bytes(PIL_image)
+    :return: features:  Feature Vectors, float32
+    """
+
+    ## https://www.tensorflow.org/tutorials/images/transfer_learning#feature_extraction   [Tensorflow - Transfer Learning with a pretrained ConvNet Tutorial]
+    ## https://machinelearningmastery.com/how-to-use-transfer-learning-when-developing-convolutional-neural-network-models/  [Transfer Learning in Keras with Computer Vision Models]
+    ## https://www.tensorflow.org/api_docs/python/tf/keras/applications/ResNet50        [Load ResNet50 Model]
+    ## https://www.learnopencv.com/keras-tutorial-using-pre-trained-imagenet-models/      [Keras Tutorial - Using Pre-trained ImageNet model]
+    ## https://www.kaggle.com/insaff/img-feature-extraction-with-pretrained-resnet     [Kaggle - Image feature extraction w/ pre-trained ResNet Tutorial]
+    ## https://medium.com/@franky07724_57962/using-keras-pre-trained-models-for-feature-extraction-in-image-clustering-a142c6cdf5b1
+    ## https://keras.io/api/preprocessing/image/  [Keras - Image Data Pre-processing]
+    ## https://pytorch.org/docs/stable/nn.html#torch.nn.AdaptiveAvgPool2d [Pytorch - Adaptive Mean-Spatial Pooling]
+    ## https://stackoverflow.com/questions/52622518/how-to-convert-pytorch-adaptive-avg-pool2d-method-to-keras-or-tensorflow [Stackoverflow - Adaptive Mean-Spatial Pooling]
+    ## https://www.tensorflow.org/api_docs/python/tf/keras/layers/GlobalAveragePooling2D [Tensorflow - Adaptive Mean-Spatial Pooling]
+
+    ## Load the ResNet50 model
+    resnet50_model = tf.keras.applications.resnet50.ResNet50(
+        include_top=False,  ## whether to include the fully-connected layer at the top of the network (default == True)
+        weights='imagenet',
+        ## values could be None (random initialization), /path_to_weights_file/, and 'imagenet' (pre-training on ImageNet)
+        # input_tensor = None,    ## Optional Keras tensor used as image input for the model
+        input_shape=input_shape,  ## Optional shape tuple only needs to be specified when include_top is False
+        # pooling=avg,          ## Optional pooling mode for feature extraction when include_top is False, its values could be None, avg, and max
+        ## CLAM adopt adaptive_mean_spatial pooling, needs to change it later
+        # classes=1000  ## Optional number of classes to classify images into, only to be specified if include_top is True, and if no weights argument is specified
+    )
+
+    resnet50_model.trainable = False  ## Free Training
+    # resnet50_model.summary()
+
+    ## Create a new Model based on original resnet50 model ended after the 3rd residual block
+    layer_name = 'conv4_block1_0_conv'
+    res50 = tf.keras.Model(inputs=resnet50_model.input, outputs=resnet50_model.get_layer(layer_name).output)
+    # res50.summary()
+
+    ## Add adaptive mean-spatial pooling after the new model
+    adaptive_mean_spatial_layer = tf.keras.layers.GlobalAvgPool2D()
+
+    ## Load Images and prep for feature extraction
+    image_np = tf.keras.preprocessing.image.img_to_array(
+        image_string)  ## Load Images of PIL format and Converted into Numpy Array
+    image_batch = np.expand_dims(image_np,
+                                 axis=0)  ## Add the fourth dimension since the networks accept a 4-dimensional tensor as an input of the form (batchsize, height, width, channel)
+    image_resnet50 = tf.keras.applications.resnet50.preprocess_input(
+        image_batch.copy())  ## Prepare the image for ResNet50 model by scalling the input image to the range
+    ## used in the pre-trained ResNet50 model
+
+    ## Return the feature vectors
+    predicts = res50_model.predict(image_resnet50)
+    # print(predicts.shape)
+    features = adaptive_mean_spatial_layer(predicts)
+    # print(features, features.shape)
+
+    return features
 
 
 def wsi_file_to_patches_tfrecord(run_parameters):
@@ -898,7 +965,7 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
     # explicitly name the input parameters
     image_file_name = run_parameters['wsi_filename']
     if os.path.isfile(image_file_name) == False:
-        print('\n\n\tFile not found:\n\t%s\n\n'%(image_file_name))
+        print('\n\n\tFile not found:\n\t%s\n\n' % (image_file_name))
         return
     output_dir = run_parameters['output_dir']
     class_label = run_parameters['class_label']
@@ -949,6 +1016,7 @@ def image_file_to_patches_directory_for_image_level(run_parameters):
     Givin a WSI (Whole Slide Image) and an Annotation File, export patches into TFRecords.
         1.  Annotation File must follow QuPath Annotation convention
         2.  Requires dictionary for class labels                                                """
+
 
 def get_priority_ordered_labels(label_id_priority_fname):
     """ ordered_priority_dict = get_priority_ordered_labels(label_id_priority_fname)
@@ -1505,6 +1573,7 @@ def run_annotated_patches(run_parameters):
         Givin a WSI and another WSI, do image registration, export pair of patches into TFRecords.
         One Whole Slide Image will be 'fixed' and the other WSI will be the 'float' image.      """
 
+
 def run_registration_pairs(run_parameters):
     """ Usage:  registration_pair_to_directory(run_parameters)
 
@@ -1656,7 +1725,7 @@ def run_registration_pairs(run_parameters):
                             image_string = open(tmp.name, 'rb').read()
 
                         except:
-                            print('Image write-read exception at patch: %i, named:\n%s'%(seq_number, patch_name))
+                            print('Image write-read exception at patch: %i, named:\n%s' % (seq_number, patch_name))
                             pass
 
                         finally:
@@ -1678,8 +1747,7 @@ def run_registration_pairs(run_parameters):
         if os.path.isfile(tfrecord_file_name):
             (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(tfrecord_file_name)
             if size > 0:
-                print('TFRecord file size:%i\n%s\n'%(size, tfrecord_file_name))
-
+                print('TFRecord file size:%i\n%s\n' % (size, tfrecord_file_name))
 
     # Close the float image
     try:
@@ -1691,6 +1759,7 @@ def run_registration_pairs(run_parameters):
 
 """
                             visualization | examination                                         """
+
 
 def tf_record_to_marked_thumbnail_image(run_parameters):
     """ Usage: thumb_preview = tf_record_to_marked_thumbnail_image(run_parameters)
