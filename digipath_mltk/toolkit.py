@@ -735,6 +735,9 @@ def _float_feature(value):
     """Returns a float_list from a float / double."""
     return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
 
+def _float32_feature(value):
+    """Returns a float_list from a float / double."""
+    return tf.train.Feature(float_list=tf.train.FloatList(value=tf.keras.backend.flatten(value)))
 
 def _int64_feature(value):
     """Returns an int64_list from a bool / enum / int / uint."""
@@ -762,7 +765,7 @@ def tf_imp_dict(image_string, label, image_name, class_label='class_label'):
                'class_label': _bytes_feature(class_label),
                'image_name': _bytes_feature(image_name),
                'image_raw': _bytes_feature(image_string),
-               'image_feature': _float_feature(patch_feature_extraction(image_string, input_shape=image_shape))}
+               'image_feature': _float32_feature(patch_feature_extraction(image_string, input_shape=image_shape))}
 
     return tf.train.Example(features=tf.train.Features(feature=feature))
 
@@ -838,7 +841,7 @@ def patch_feature_extraction(image_string, input_shape=(512, 512, 3)):
     predicts = res50.predict(image_resnet50)
     # print(predicts.shape)
     features = adaptive_mean_spatial_layer(predicts)
-    features = tf.keras.backend.flatten(features)
+    #features = tf.keras.backend.flatten(features)
     # print(features, features.shape)
 
     return features
