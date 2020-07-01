@@ -4,6 +4,7 @@ digipath_toolkit.py
 process large slide images using openslide
 """
 import os
+import io
 import tempfile
 from collections import defaultdict, OrderedDict
 import argparse
@@ -807,28 +808,11 @@ def patch_feature_extraction(image_string, input_shape=(512, 512, 3)):
         image_string:  bytes(PIL_image)
     :return: features:  Feature Vectors, float32
     """
-
-    ## https://www.tensorflow.org/tutorials/images/transfer_learning#feature_extraction   [Tensorflow - Transfer Learning with a pretrained ConvNet Tutorial]
-    ## https://machinelearningmastery.com/how-to-use-transfer-learning-when-developing-convolutional-neural-network-models/  [Transfer Learning in Keras with Computer Vision Models]
-    ## https://www.tensorflow.org/api_docs/python/tf/keras/applications/ResNet50        [Load ResNet50 Model]
-    ## https://www.learnopencv.com/keras-tutorial-using-pre-trained-imagenet-models/      [Keras Tutorial - Using Pre-trained ImageNet model]
-    ## https://www.kaggle.com/insaff/img-feature-extraction-with-pretrained-resnet     [Kaggle - Image feature extraction w/ pre-trained ResNet Tutorial]
-    ## https://medium.com/@franky07724_57962/using-keras-pre-trained-models-for-feature-extraction-in-image-clustering-a142c6cdf5b1
-    ## https://keras.io/api/preprocessing/image/  [Keras - Image Data Pre-processing]
-    ## https://pytorch.org/docs/stable/nn.html#torch.nn.AdaptiveAvgPool2d [Pytorch - Adaptive Mean-Spatial Pooling]
-    ## https://stackoverflow.com/questions/52622518/how-to-convert-pytorch-adaptive-avg-pool2d-method-to-keras-or-tensorflow [Stackoverflow - Adaptive Mean-Spatial Pooling]
-    ## https://www.tensorflow.org/api_docs/python/tf/keras/layers/GlobalAveragePooling2D [Tensorflow - Adaptive Mean-Spatial Pooling]
-
     ## Load the ResNet50 model
     resnet50_model = tf.keras.applications.resnet50.ResNet50(
-        include_top=False,  ## whether to include the fully-connected layer at the top of the network (default == True)
+        include_top=False,
         weights='imagenet',
-        ## values could be None (random initialization), /path_to_weights_file/, and 'imagenet' (pre-training on ImageNet)
-        # input_tensor = None,    ## Optional Keras tensor used as image input for the model
-        input_shape=input_shape,  ## Optional shape tuple only needs to be specified when include_top is False
-        # pooling=avg,          ## Optional pooling mode for feature extraction when include_top is False, its values could be None, avg, and max
-        ## CLAM adopt adaptive_mean_spatial pooling, needs to change it later
-        # classes=1000  ## Optional number of classes to classify images into, only to be specified if include_top is True, and if no weights argument is specified
+        input_shape=input_shape
     )
 
     resnet50_model.trainable = False  ## Free Training
@@ -843,18 +827,17 @@ def patch_feature_extraction(image_string, input_shape=(512, 512, 3)):
     adaptive_mean_spatial_layer = tf.keras.layers.GlobalAvgPool2D()
 
     ## Load Images and prep for feature extraction
-    image_np = tf.keras.preprocessing.image.img_to_array(
-        image_string)  ## Load Images of PIL format and Converted into Numpy Array
-    image_batch = np.expand_dims(image_np,
-                                 axis=0)  ## Add the fourth dimension since the networks accept a 4-dimensional tensor as an input of the form (batchsize, height, width, channel)
-    image_resnet50 = tf.keras.applications.resnet50.preprocess_input(
-        image_batch.copy())  ## Prepare the image for ResNet50 model by scalling the input image to the range
-    ## used in the pre-trained ResNet50 model
+    image_decode = Image.open(image_string)
+    image_pure = tf.keras.preprocessing.image.load_img(image_decode)
+    image_np = tf.keras.preprocessing.image.img_to_array(image_pure)
+    image_batch = np.expand_dims(image_np,axis=0)
+    image_resnet50 = tf.keras.applications.resnet50.preprocess_input(image_batch.copy())
 
     ## Return the feature vectors
-    predicts = res50_model.predict(image_resnet50)
+    predicts = res50.predict(image_resnet50)
     # print(predicts.shape)
     features = adaptive_mean_spatial_layer(predicts)
+    features = tf.keras.backend.flatten(features)
     # print(features, features.shape)
 
     return features
