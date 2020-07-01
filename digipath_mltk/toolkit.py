@@ -827,10 +827,11 @@ def patch_feature_extraction(image_string, input_shape=(512, 512, 3)):
     adaptive_mean_spatial_layer = tf.keras.layers.GlobalAvgPool2D()
 
     ## Load Images and prep for feature extraction
-    image_decode = Image.open(image_string)
-    image_pure = tf.keras.preprocessing.image.load_img(image_decode)
-    image_np = tf.keras.preprocessing.image.img_to_array(image_pure)
-    image_batch = np.expand_dims(image_np,axis=0)
+    #image_decode = tf.io.decode_image(image_string)
+    #image_pure = tf.keras.preprocessing.image.load_img(image_decode)
+    #image_np = tf.keras.preprocessing.image.img_to_array(image_pure)
+    image_np = np.array(Image.open(io.BytesIO(image_string)))
+    image_batch = np.expand_dims(image_np, axis=0)
     image_resnet50 = tf.keras.applications.resnet50.preprocess_input(image_batch.copy())
 
     ## Return the feature vectors
