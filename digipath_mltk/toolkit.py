@@ -735,9 +735,6 @@ def _float_feature(value):
     """Returns a float_list from a float / double."""
     return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
 
-def _float32_feature(value):
-    """Returns a float_list from a float / double."""
-    return tf.train.Feature(float_list=tf.train.FloatList(value=tf.keras.backend.flatten(value)))
 
 def _int64_feature(value):
     """Returns an int64_list from a bool / enum / int / uint."""
@@ -758,6 +755,7 @@ def tf_imp_dict(image_string, label, image_name, class_label='class_label'):
 
     """
     image_shape = tf.image.decode_jpeg(image_string).shape
+    image_feature = patch_feature_extraction(image_string, input_shape=image_shape)
     feature = {'height': _int64_feature(image_shape[0]),
                'width': _int64_feature(image_shape[1]),
                'depth': _int64_feature(image_shape[2]),
@@ -765,7 +763,7 @@ def tf_imp_dict(image_string, label, image_name, class_label='class_label'):
                'class_label': _bytes_feature(class_label),
                'image_name': _bytes_feature(image_name),
                'image_raw': _bytes_feature(image_string),
-               'image_feature': _float32_feature(patch_feature_extraction(image_string, input_shape=image_shape))}
+               'image_feature': _bytes_feature(image_feature)}
 
     return tf.train.Example(features=tf.train.Features(feature=feature))
 
@@ -819,32 +817,26 @@ def patch_feature_extraction(image_string, input_shape=(512, 512, 3)):
     )
 
     resnet50_model.trainable = False  ## Free Training
-    # resnet50_model.summary()
 
     ## Create a new Model based on original resnet50 model ended after the 3rd residual block
     layer_name = 'conv4_block1_0_conv'
     res50 = tf.keras.Model(inputs=resnet50_model.input, outputs=resnet50_model.get_layer(layer_name).output)
-    # res50.summary()
 
     ## Add adaptive mean-spatial pooling after the new model
     adaptive_mean_spatial_layer = tf.keras.layers.GlobalAvgPool2D()
 
     ## Load Images and prep for feature extraction
-    #image_decode = tf.io.decode_image(image_string)
-    #image_pure = tf.keras.preprocessing.image.load_img(image_decode)
-    #image_np = tf.keras.preprocessing.image.img_to_array(image_pure)
     image_np = np.array(Image.open(io.BytesIO(image_string)))
     image_batch = np.expand_dims(image_np, axis=0)
-    image_resnet50 = tf.keras.applications.resnet50.preprocess_input(image_batch.copy())
+    image_patch = tf.keras.applications.resnet50.preprocess_input(image_batch.copy())
 
     ## Return the feature vectors
-    predicts = res50.predict(image_resnet50)
-    # print(predicts.shape)
+    predicts = res50.predict(image_patch)
     features = adaptive_mean_spatial_layer(predicts)
-    #features = tf.keras.backend.flatten(features)
-    # print(features, features.shape)
+    features = tf.io.serialize_tensor(features)
+    img_features = features.numpy()
 
-    return features
+    return img_features
 
 
 def wsi_file_to_patches_tfrecord(run_parameters):
